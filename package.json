@@ -6,15 +6,18 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",
-    "preview": "vite preview",
-    "import-supabase": "tsx scripts/import-json-to-supabase.ts"
+    "preview": "npm run build && wrangler dev",
+    "import-supabase": "tsx scripts/import-json-to-supabase.ts",
+    "deploy": "npm run build && wrangler deploy"
   },
   "devDependencies": {
+    "@cloudflare/vite-plugin": "^1.32.2",
     "@types/node": "^22.10.1",
     "dotenv": "^16.4.7",
     "tsx": "^4.19.2",
     "typescript": "^5.6.3",
-    "vite": "^6.2.0"
+    "vite": "^6.2.0",
+    "wrangler": "^4.82.2"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.103.0"

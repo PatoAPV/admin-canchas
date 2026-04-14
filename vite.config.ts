@@ -3,6 +3,8 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { defineConfig } from "vite";
 
+import { cloudflare } from "@cloudflare/vite-plugin";
+
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 /** Solo con `npm run dev`: guarda cambios en `public/datos-canchas.json`. */
@@ -47,5 +49,5 @@ function adminCanchasGuardarJsonPlugin(): import("vite").Plugin {
 
 export default defineConfig({
   base: "./",
-  plugins: [adminCanchasGuardarJsonPlugin()],
+  plugins: [adminCanchasGuardarJsonPlugin(), cloudflare()],
 });

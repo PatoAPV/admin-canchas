@@ -1,0 +1,596 @@
+{
+  "exportVersion": 1,
+  "exportado": "2026-04-13T20:24:05.021Z",
+  "aplicacion": "admin-canchas",
+  "jugadores": [
+    {
+      "id": "1775681409142-t3bpuen",
+      "nombre": "Mauricio Yañez",
+      "posiciones": [
+        "arquero"
+      ],
+      "destreza": 10,
+      "saldo": -2000
+    },
+    {
+      "id": "1775681418384-pyneuut",
+      "nombre": "Andy",
+      "posiciones": [
+        "arquero"
+      ],
+      "destreza": 10,
+      "saldo": -7000
+    },
+    {
+      "id": "1775681433032-n3f5vjm",
+      "nombre": "Claudio",
+      "posiciones": [
+        "defensa"
+      ],
+      "destreza": 5,
+      "saldo": 7000
+    },
+    {
+      "id": "1775681548091-12j0c72",
+      "nombre": "Erik",
+      "posiciones": [
+        "volante"
+      ],
+      "destreza": 10,
+      "saldo": 1500
+    },
+    {
+      "id": "1775681563635-g17704u",
+      "nombre": "Ricky",
+      "posiciones": [
+        "defensa",
+        "volante"
+      ],
+      "destreza": 5,
+      "saldo": 15000
+    },
+    {
+      "id": "1775681577208-4icxlky",
+      "nombre": "Pancho",
+      "posiciones": [
+        "volante"
+      ],
+      "destreza": 10,
+      "saldo": -22000
+    },
+    {
+      "id": "1775681636814-dz9uh39",
+      "nombre": "Victor",
+      "posiciones": [
+        "volante",
+        "delantero"
+      ],
+      "destreza": 7,
+      "saldo": 8500
+    },
+    {
+      "id": "1775681650058-t69f5ki",
+      "nombre": "Mauricio P",
+      "posiciones": [
+        "defensa"
+      ],
+      "destreza": 8,
+      "saldo": 500
+    },
+    {
+      "id": "1775681662242-32w96bt",
+      "nombre": "Alfredo",
+      "posiciones": [
+        "volante"
+      ],
+      "destreza": 5,
+      "saldo": 8500
+    },
+    {
+      "id": "1775681753593-kwac7x5",
+      "nombre": "Andres Jara",
+      "posiciones": [
+        "volante"
+      ],
+      "destreza": 6,
+      "saldo": 4000
+    },
+    {
+      "id": "1775681763218-z6b6m5c",
+      "nombre": "Alejandro Jara",
+      "posiciones": [
+        "volante"
+      ],
+      "destreza": 5,
+      "saldo": 500
+    },
+    {
+      "id": "1775681768738-qz0mbrw",
+      "nombre": "Alexis Beltran",
+      "posiciones": [
+        "volante"
+      ],
+      "destreza": 10,
+      "saldo": 500
+    },
+    {
+      "id": "1775681780576-9ciew71",
+      "nombre": "Camilo",
+      "posiciones": [
+        "defensa",
+        "volante"
+      ],
+      "destreza": 7,
+      "saldo": 5500
+    },
+    {
+      "id": "1775681786403-ba3ic8c",
+      "nombre": "Carlos",
+      "posiciones": [
+        "volante"
+      ],
+      "destreza": 5,
+      "saldo": -1000
+    },
+    {
+      "id": "1775681798690-lkzwo1o",
+      "nombre": "Chris",
+      "posiciones": [
+        "defensa"
+      ],
+      "destreza": 7,
+      "saldo": -8500
+    },
+    {
+      "id": "1775681805927-qp0i8di",
+      "nombre": "Fele",
+      "posiciones": [
+        "defensa",
+        "volante"
+      ],
+      "destreza": 5,
+      "saldo": 0
+    },
+    {
+      "id": "1775681812986-tnvsy4n",
+      "nombre": "Felipe Jara",
+      "posiciones": [
+        "defensa",
+        "volante"
+      ],
+      "destreza": 6,
+      "saldo": -1000
+    },
+    {
+      "id": "1775681819616-jqm8phj",
+      "nombre": "Ignacio",
+      "posiciones": [
+        "volante"
+      ],
+      "destreza": 7,
+      "saldo": -2500
+    },
+    {
+      "id": "1775681827895-jtz90bn",
+      "nombre": "Javier",
+      "posiciones": [
+        "volante"
+      ],
+      "destreza": 5,
+      "saldo": -1000
+    },
+    {
+      "id": "1775681840242-ddfo01i",
+      "nombre": "Jeans",
+      "posiciones": [
+        "defensa",
+        "volante"
+      ],
+      "destreza": 5,
+      "saldo": 9000
+    },
+    {
+      "id": "1775681852079-qp57f3x",
+      "nombre": "Juan Meza",
+      "posiciones": [
+        "defensa",
+        "volante"
+      ],
+      "destreza": 7,
+      "saldo": 12500
+    },
+    {
+      "id": "1775681863228-l0vqg53",
+      "nombre": "Jorge Ruiz",
+      "posiciones": [
+        "delantero"
+      ],
+      "destreza": 3,
+      "saldo": 7000
+    },
+    {
+      "id": "1775681872673-38fefng",
+      "nombre": "Juan Sanchez",
+      "posiciones": [
+        "defensa",
+        "volante"
+      ],
+      "destreza": 6,
+      "saldo": -4000
+    },
+    {
+      "id": "1775681882946-vdtbycz",
+      "nombre": "Pipe Rozas",
+      "posiciones": [
+        "delantero"
+      ],
+      "destreza": 5,
+      "saldo": 4500
+    },
+    {
+      "id": "1775681891900-lpnlmt3",
+      "nombre": "Raul",
+      "posiciones": [
+        "delantero"
+      ],
+      "destreza": 3,
+      "saldo": 17000
+    },
+    {
+      "id": "1775681901067-xt70y7k",
+      "nombre": "Ruben",
+      "posiciones": [
+        "defensa",
+        "volante"
+      ],
+      "destreza": 5,
+      "saldo": 8000
+    },
+    {
+      "id": "1775683231628-6c1a5f9",
+      "nombre": "Pato",
+      "posiciones": [
+        "delantero"
+      ],
+      "destreza": 5,
+      "saldo": 0
+    },
+    {
+      "id": "1775702533920-rw4wuiv",
+      "nombre": "Z-Otros Ingresos/Egresos",
+      "posiciones": [
+        "volante"
+      ],
+      "destreza": 1,
+      "saldo": 97500
+    }
+  ],
+  "abonos": [
+    {
+      "id": "1775746159111-wqojsl8",
+      "jugadorId": "1775702533920-rw4wuiv",
+      "monto": -6500,
+      "fecha": "2026-04-09T14:49:19.111Z",
+      "nota": "Cervezas",
+      "anulado": true
+    },
+    {
+      "id": "1775702569686-mo6nrkm",
+      "jugadorId": "1775702533920-rw4wuiv",
+      "monto": 97500,
+      "fecha": "2026-04-09T02:42:49.686Z",
+      "nota": "Saldo Inicial - Abril 2026"
+    },
+    {
+      "id": "1775701463635-fmukeqc",
+      "jugadorId": "1775681805927-qp0i8di",
+      "monto": 4000,
+      "fecha": "2026-04-09T02:24:23.635Z",
+      "nota": "Tranferencia 08 de Abril 2026"
+    },
+    {
+      "id": "1775683001588-ns4jrny",
+      "jugadorId": "1775681636814-dz9uh39",
+      "monto": 12500,
+      "fecha": "2026-04-08T21:16:41.588Z",
+      "nota": "Saldo inicial - Abril 2026"
+    },
+    {
+      "id": "1775682989913-skhki2y",
+      "jugadorId": "1775681901067-xt70y7k",
+      "monto": 12000,
+      "fecha": "2026-04-08T21:16:29.913Z",
+      "nota": "Saldo inicial - Abril 2026"
+    },
+    {
+      "id": "1775682977182-uqnw925",
+      "jugadorId": "1775681563635-g17704u",
+      "monto": 15000,
+      "fecha": "2026-04-08T21:16:17.182Z",
+      "nota": "Saldo inicial - Abril 2026"
+    },
+    {
+      "id": "1775682963999-pyuu0fx",
+      "jugadorId": "1775681891900-lpnlmt3",
+      "monto": 17000,
+      "fecha": "2026-04-08T21:16:03.999Z",
+      "nota": "Saldo inicial - Abril 2026"
+    },
+    {
+      "id": "1775682954540-fkm4q9s",
+      "jugadorId": "1775681882946-vdtbycz",
+      "monto": 8500,
+      "fecha": "2026-04-08T21:15:54.540Z",
+      "nota": "Saldo inicial - Abril 2026"
+    },
+    {
+      "id": "1775682938328-bha3z1k",
+      "jugadorId": "1775681554766-1ugla86",
+      "monto": 12000,
+      "fecha": "2026-04-08T21:15:38.328Z",
+      "nota": "Saldo inicial - Abril 2026"
+    },
+    {
+      "id": "1775682904088-fqg9ovi",
+      "jugadorId": "1775681577208-4icxlky",
+      "monto": -15000,
+      "fecha": "2026-04-08T21:15:04.088Z",
+      "nota": "Saldo inicial - Abril 2026"
+    },
+    {
+      "id": "1775682891255-ed7eq81",
+      "jugadorId": "1775681650058-t69f5ki",
+      "monto": 500,
+      "fecha": "2026-04-08T21:14:51.255Z",
+      "nota": "Saldo inicial - Abril 2026"
+    },
+    {
+      "id": "1775682879070-hgizd6r",
+      "jugadorId": "1775681409142-t3bpuen",
+      "monto": 2000,
+      "fecha": "2026-04-08T21:14:39.070Z",
+      "nota": "Saldo inicial - Abril 2026"
+    },
+    {
+      "id": "1775682861754-jo4lus6",
+      "jugadorId": "1775681872673-38fefng",
+      "monto": -4000,
+      "fecha": "2026-04-08T21:14:21.754Z",
+      "nota": "Saldo inicial - Abril 2026"
+    },
+    {
+      "id": "1775682845477-tfoga3k",
+      "jugadorId": "1775681852079-qp57f3x",
+      "monto": 18500,
+      "fecha": "2026-04-08T21:14:05.477Z",
+      "nota": "Saldo inicial - Abril 2026"
+    },
+    {
+      "id": "1775682832156-j8xjx8n",
+      "jugadorId": "1775681863228-l0vqg53",
+      "monto": 11000,
+      "fecha": "2026-04-08T21:13:52.156Z",
+      "nota": "Saldo inicial - Abril 2026"
+    },
+    {
+      "id": "1775682814126-t6zqqi6",
+      "jugadorId": "1775681840242-ddfo01i",
+      "monto": 13000,
+      "fecha": "2026-04-08T21:13:34.126Z",
+      "nota": "Saldo inicial - Abril 2026"
+    },
+    {
+      "id": "1775682801617-hpy8er7",
+      "jugadorId": "1775681827895-jtz90bn",
+      "monto": -1000,
+      "fecha": "2026-04-08T21:13:21.617Z",
+      "nota": "Saldo inicial - Abril 2026"
+    },
+    {
+      "id": "1775682789068-wo62zps",
+      "jugadorId": "1775681819616-jqm8phj",
+      "monto": 1500,
+      "fecha": "2026-04-08T21:13:09.068Z",
+      "nota": "Saldo inicial - Abril 2026"
+    },
+    {
+      "id": "1775682774305-wqc1jeu",
+      "jugadorId": "1775681812986-tnvsy4n",
+      "monto": 3000,
+      "fecha": "2026-04-08T21:12:54.305Z",
+      "nota": "Saldo inicial - Abril 2026"
+    },
+    {
+      "id": "1775682758104-rimuqb6",
+      "jugadorId": "1775681805927-qp0i8di",
+      "monto": -4000,
+      "fecha": "2026-04-08T21:12:38.104Z",
+      "nota": "Saldo inicial - Abril 2026"
+    },
+    {
+      "id": "1775682743855-i3cxtmj",
+      "jugadorId": "1775681798690-lkzwo1o",
+      "monto": -8500,
+      "fecha": "2026-04-08T21:12:23.855Z",
+      "nota": "Saldo inicial - Abril 2026"
+    },
+    {
+      "id": "1775682713970-7nsaeng",
+      "jugadorId": "1775681418384-pyneuut",
+      "monto": -1,
+      "fecha": "2026-04-08T21:11:53.970Z",
+      "nota": "Saldo inicial - Abril 2026"
+    },
+    {
+      "id": "1775682704525-80qqxt0",
+      "jugadorId": "1775681418384-pyneuut",
+      "monto": 1,
+      "fecha": "2026-04-08T21:11:44.525Z",
+      "nota": "Saldo inicial - Abril 2026"
+    },
+    {
+      "id": "1775682537557-y76ite2",
+      "jugadorId": "1775681548091-12j0c72",
+      "monto": 5500,
+      "fecha": "2026-04-08T21:08:57.557Z"
+    },
+    {
+      "id": "1775682526846-puep0vj",
+      "jugadorId": "1775681433032-n3f5vjm",
+      "monto": 14000,
+      "fecha": "2026-04-08T21:08:46.846Z",
+      "nota": "Saldo inicial - Abril 2026"
+    },
+    {
+      "id": "1775682464331-kz5jig5",
+      "jugadorId": "1775681786403-ba3ic8c",
+      "monto": 2000,
+      "fecha": "2026-04-08T21:07:44.331Z",
+      "nota": "Saldo inicial - Abril 2026"
+    },
+    {
+      "id": "1775682448399-8b1yfgk",
+      "jugadorId": "1775681780576-9ciew71",
+      "monto": 5500,
+      "fecha": "2026-04-08T21:07:28.399Z",
+      "nota": "Saldo inicial - Abril 2026"
+    },
+    {
+      "id": "1775682415075-s2nymd7",
+      "jugadorId": "1775681753593-kwac7x5",
+      "monto": 7000,
+      "fecha": "2026-04-08T21:06:55.075Z",
+      "nota": "Saldo inicial - Abril 2026"
+    },
+    {
+      "id": "1775682403282-jo8dquv",
+      "jugadorId": "1775681662242-32w96bt",
+      "monto": 12500,
+      "fecha": "2026-04-08T21:06:43.283Z",
+      "nota": "Saldo inicial - Abril 2026"
+    },
+    {
+      "id": "1775682392797-t4yx3fw",
+      "jugadorId": "1775681768738-qz0mbrw",
+      "monto": 500,
+      "fecha": "2026-04-08T21:06:32.797Z",
+      "nota": "Saldo inicial - Abril 2026"
+    },
+    {
+      "id": "1775682381954-rvqlh05",
+      "jugadorId": "1775681763218-z6b6m5c",
+      "monto": 4500,
+      "fecha": "2026-04-08T21:06:21.954Z",
+      "nota": "Saldo inicial - Abril 2026"
+    }
+  ],
+  "partidos": [
+    {
+      "id": "1776105412897-qop5y9h",
+      "cancha": "desafio-vs",
+      "fecha": "2026-04-10T01:00:00.000Z",
+      "jugadorIds": [
+        "1775681753593-kwac7x5",
+        "1775681418384-pyneuut",
+        "1775681786403-ba3ic8c",
+        "1775681433032-n3f5vjm",
+        "1775681852079-qp57f3x",
+        "1775681577208-4icxlky"
+      ],
+      "montoPorJugador": 3000,
+      "valorArriendo": 22000,
+      "galletas": [
+        {
+          "id": "1776105412897-hf0wot2",
+          "nombre": "G-Juan Meza",
+          "monto": 3000,
+          "cargoAJugadorId": "1775681852079-qp57f3x"
+        }
+      ],
+      "coloresEquipoPorJugador": {
+        "1775681753593-kwac7x5": "azul",
+        "1775681418384-pyneuut": "azul",
+        "1775681786403-ba3ic8c": "azul",
+        "1775681433032-n3f5vjm": "azul",
+        "1775681852079-qp57f3x": "azul",
+        "1775681577208-4icxlky": "azul"
+      }
+    },
+    {
+      "id": "1776105290117-clqz4uj",
+      "cancha": 1,
+      "fecha": "2026-04-29T01:00:00.000Z",
+      "jugadorIds": [],
+      "montoPorJugador": 4000,
+      "valorArriendo": 52000
+    },
+    {
+      "id": "1776105269570-64qfbit",
+      "cancha": 1,
+      "fecha": "2026-04-22T01:00:00.000Z",
+      "jugadorIds": [],
+      "montoPorJugador": 4000,
+      "valorArriendo": 52000
+    },
+    {
+      "id": "1776105244293-2sy0xlw",
+      "cancha": 1,
+      "fecha": "2026-04-15T01:00:00.000Z",
+      "jugadorIds": [],
+      "montoPorJugador": 4000,
+      "valorArriendo": 52000
+    },
+    {
+      "id": "1776104727543-wppa9m7",
+      "cancha": 1,
+      "fecha": "2026-04-08T01:00:00.000Z",
+      "jugadorIds": [
+        "1775681763218-z6b6m5c",
+        "1775681662242-32w96bt",
+        "1775681418384-pyneuut",
+        "1775681433032-n3f5vjm",
+        "1775681548091-12j0c72",
+        "1775681812986-tnvsy4n",
+        "1775681819616-jqm8phj",
+        "1775681840242-ddfo01i",
+        "1775681863228-l0vqg53",
+        "1775681409142-t3bpuen",
+        "1775681577208-4icxlky",
+        "1775681882946-vdtbycz",
+        "1775681901067-xt70y7k",
+        "1775681636814-dz9uh39"
+      ],
+      "montoPorJugador": 4000,
+      "valorArriendo": 52000,
+      "coloresEquipoPorJugador": {
+        "1775681763218-z6b6m5c": "rojo",
+        "1775681662242-32w96bt": "rojo",
+        "1775681418384-pyneuut": "azul",
+        "1775681433032-n3f5vjm": "azul",
+        "1775681548091-12j0c72": "rojo",
+        "1775681812986-tnvsy4n": "azul",
+        "1775681819616-jqm8phj": "rojo",
+        "1775681840242-ddfo01i": "rojo",
+        "1775681863228-l0vqg53": "azul",
+        "1775681409142-t3bpuen": "rojo",
+        "1775681577208-4icxlky": "azul",
+        "1775681882946-vdtbycz": "azul",
+        "1775681901067-xt70y7k": "azul",
+        "1775681636814-dz9uh39": "rojo"
+      },
+      "resultadoEncuentro": "empate"
+    }
+  ],
+  "reglasEquiposSeparacion": [
+    {
+      "id": "1775691024956-hnfhy2k",
+      "jugadorIdA": "1775681548091-12j0c72",
+      "jugadorIdB": "1775681577208-4icxlky"
+    },
+    {
+      "id": "1775691024956-dxj8vcq",
+      "jugadorIdA": "1775681577208-4icxlky",
+      "jugadorIdB": "1775681768738-qz0mbrw"
+    }
+  ]
+}

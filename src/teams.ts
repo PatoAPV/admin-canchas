@@ -5,8 +5,9 @@ export type EncuentroPorEquipo = 6 | 7 | 8;
 
 export const ENCUENTRO_OPCIONES: EncuentroPorEquipo[] = [6, 7, 8];
 
-const INTENTOS_PARTICION = 520;
-const INTENTOS_PLANTILLA_POR_PARTICION = 36;
+/** Intentos de partición (reglas / plantillas). Valores más altos = mejor calidad y más lento. */
+const INTENTOS_PARTICION = 240;
+const INTENTOS_PLANTILLA_POR_PARTICION = 14;
 
 function plural(n: number, una: string, varias: string): string {
   return n === 1 ? `1 ${una}` : `${n} ${varias}`;
@@ -162,6 +163,25 @@ function particionCumpleBalanceGalletas(
   return Math.abs(gA - gB) === 1;
 }
 
+/**
+ * Partición aleatoria que ya cumple balance de galletas (evita descartar ~50 % de los shuffles).
+ * Mezcla el orden dentro de cada grupo y reparte gA = ceil(g/2) galletas al equipo A.
+ */
+function particionAleatoriaBalanceGalletas(
+  todos: Jugador[],
+  n: number,
+  idsGalletas: ReadonlySet<string>
+): [Jugador[], Jugador[]] {
+  const galletas = shuffle(todos.filter((j) => idsGalletas.has(j.id)));
+  const otros = shuffle(todos.filter((j) => !idsGalletas.has(j.id)));
+  const g = galletas.length;
+  const gA = Math.ceil(g / 2);
+  const needOtrosA = n - gA;
+  const jugA = [...galletas.slice(0, gA), ...otros.slice(0, needOtrosA)];
+  const jugB = [...galletas.slice(gA), ...otros.slice(needOtrosA)];
+  return [jugA, jugB];
+}
+
 function jugadoresCumplenReglasSeparacion(
   jugA: Jugador[],
   jugB: Jugador[],
@@ -233,8 +253,10 @@ export function armarEquiposAleatorio(
   const flexArquero = !poolTieneArqueroDeclarado(jugadoresSeleccionados);
 
   let intentos = INTENTOS_PARTICION;
-  if (reglasActivas.length > 0) intentos = Math.floor(intentos * 1.6);
-  if (idsGalletasSorteo && idsGalletasSorteo.size > 0) intentos = Math.floor(intentos * 1.45);
+  if (reglasActivas.length > 0) intentos = Math.floor(intentos * 1.3);
+
+  const usarParticionGalletas =
+    idsGalletasSorteo !== undefined && idsGalletasSorteo.size > 0;
 
   let mejor: { ok: true; equipoA: LineUp[]; equipoB: LineUp[] } | null = null;
   let mejorScoreRoles = Infinity;
@@ -242,10 +264,17 @@ export function armarEquiposAleatorio(
   let ultimoError = "";
 
   for (let i = 0; i < intentos; i++) {
-    const orden = shuffle([...jugadoresSeleccionados]);
-    const jugA = orden.slice(0, n);
-    const jugB = orden.slice(n, total);
-    if (!particionCumpleBalanceGalletas(jugA, jugB, idsGalletasSorteo)) continue;
+    let jugA: Jugador[];
+    let jugB: Jugador[];
+    if (usarParticionGalletas) {
+      const idsG = idsGalletasSorteo as ReadonlySet<string>;
+      [jugA, jugB] = particionAleatoriaBalanceGalletas(jugadoresSeleccionados, n, idsG);
+    } else {
+      const orden = shuffle([...jugadoresSeleccionados]);
+      jugA = orden.slice(0, n);
+      jugB = orden.slice(n, total);
+      if (!particionCumpleBalanceGalletas(jugA, jugB, idsGalletasSorteo)) continue;
+    }
     if (!jugadoresCumplenReglasSeparacion(jugA, jugB, reglasActivas)) continue;
 
     const scoreRoles = scoreEquilibrioRolesJugadores(jugA, jugB);
@@ -319,7 +348,8 @@ export type ResultadoDosOpcionesEquipos =
       opcion2: { equipoA: LineUp[]; equipoB: LineUp[] };
     };
 
-const INTENTOS_SEGUNDA_OPCION = 280;
+/** Cada intento vuelve a ejecutar un sorteo completo; mantener bajo para respuesta rápida. */
+const INTENTOS_SEGUNDA_OPCION = 40;
 
 export function armarDosOpcionesEquipos(
   jugadoresSeleccionados: Jugador[],

@@ -1422,10 +1422,10 @@ button.primary.modal-btn-peligro:hover {
   filter: brightness(1.08);
 }
 
-/* Cursor balón (URL definida en JS desde public/soccer-cursor.svg; fallback wait). */
-html.equipos-sorteando,
-html.equipos-sorteando * {
-  cursor: var(--equipos-cursor-futbol, wait) !important;
+/* Cursor balón durante guardados, Supabase, sorteo, login, etc. Fallback wait ≈ reloj de arena (Windows). */
+html.app-procesando,
+html.app-procesando * {
+  cursor: var(--app-busy-cursor, wait) !important;
 }
 
 /* Pantalla de login (Supabase) */

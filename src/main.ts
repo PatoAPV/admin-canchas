@@ -1,5 +1,11 @@
 import "./styles.css";
 import {
+  beginBusyCursor,
+  endBusyCursor,
+  runWithBusyCursorAsync,
+  runWithBusyCursorSync,
+} from "./busyCursor";
+import {
   cargarSesionYRol,
   cerrarSesion,
   esAdminApp,
@@ -142,13 +148,6 @@ function idJugadorGalletaNuevaDefecto(jugadoresEnLista: Jugador[]): string {
   return pato?.id ?? jugadoresEnLista[0]!.id;
 }
 
-/** URL del cursor (public/soccer-cursor.svg); absoluta para que el navegador lo cargue bien. */
-function urlCursorBalonSoccer(): string {
-  const base = import.meta.env.BASE_URL;
-  const prefix = base.endsWith("/") ? base : `${base}/`;
-  return new URL(`${prefix}soccer-cursor.svg`, document.baseURI).href;
-}
-
 /** Logo del encabezado: `public/logo.png` o `VITE_APP_LOGO` (solo nombre de archivo seguro). */
 function urlLogoCabecera(): string {
   let name = (import.meta.env.VITE_APP_LOGO as string | undefined)?.trim() || "logo.png";
@@ -194,22 +193,6 @@ function guardarTemaPreferido(t: "default" | "futbol"): void {
   url.searchParams.delete("tema");
   const q = url.searchParams.toString();
   history.replaceState({}, "", url.pathname + (q ? `?${q}` : "") + url.hash);
-}
-
-/** Muestra el cursor de balón y deja pintar un frame antes del trabajo síncrono del sorteo. */
-function withFutbolWaitCursor(run: () => void): void {
-  const html = document.documentElement;
-  const cursorVal = `url("${urlCursorBalonSoccer()}") 32 32, wait`;
-  html.classList.add("equipos-sorteando");
-  html.style.setProperty("--equipos-cursor-futbol", cursorVal);
-  requestAnimationFrame(() => {
-    try {
-      run();
-    } finally {
-      html.classList.remove("equipos-sorteando");
-      html.style.removeProperty("--equipos-cursor-futbol");
-    }
-  });
 }
 
 let estado: EstadoApp = {
@@ -509,13 +492,18 @@ function errDetalle(e: unknown): string {
 
 function persist(): void {
   if (!puedeEscribirEnPestanaActual()) return;
-  void guardar(estado).catch((e) => {
-    setMsg(
-      "error",
-      `No se pudo guardar en Supabase (${errDetalle(e)}). Los datos siguen en este navegador; probá de nuevo o en Respaldo «Actualizar datos en Supabase». Si usás clave publishable y falla, probá la clave anon (API Keys → Legacy).`
-    );
-    render();
-  });
+  beginBusyCursor();
+  void guardar(estado)
+    .catch((e) => {
+      setMsg(
+        "error",
+        `No se pudo guardar en Supabase (${errDetalle(e)}). Los datos siguen en este navegador; probá de nuevo o en Respaldo «Actualizar datos en Supabase». Si usás clave publishable y falla, probá la clave anon (API Keys → Legacy).`
+      );
+      render();
+    })
+    .finally(() => {
+      endBusyCursor();
+    });
 }
 
 function setMsg(type: "ok" | "error", text: string): void {
@@ -796,7 +784,7 @@ function render(): void {
 
       if (tab === "informe" || tab === "informe-partidos") {
         const tabEsperado = tab;
-        void (async () => {
+        void runWithBusyCursorAsync(async () => {
           if (isSupabaseConfigured()) {
             try {
               const e = await recargarEstadoDesdeSupabase();
@@ -815,19 +803,21 @@ function render(): void {
           if (tab !== "informe") return;
           if (fromProject && estadoTieneContenido(fromProject)) {
             estado = fromProject;
-            void guardar(estado);
+            await guardar(estado);
             render();
           }
-        })();
+        });
       }
     });
   });
 
   bindPanelEvents(app);
 
-  app.querySelector("#btn-cerrar-sesion")?.addEventListener("click", async () => {
-    await cerrarSesion();
-    renderPantallaLogin();
+  app.querySelector("#btn-cerrar-sesion")?.addEventListener("click", () => {
+    void runWithBusyCursorAsync(async () => {
+      await cerrarSesion();
+      renderPantallaLogin();
+    });
   });
 
   if (tab === "equipos" && !equiposSorteoWarmupListo) {
@@ -2498,6 +2488,7 @@ function bindPanelEvents(root: HTMLElement): void {
     subiendoSupabaseDesdeRespaldo = true;
     mensaje = null;
     render();
+    beginBusyCursor();
     void guardar(estado)
       .then(() => {
         setMsg("ok", "Datos actualizados en Supabase.");
@@ -2509,6 +2500,7 @@ function bindPanelEvents(root: HTMLElement): void {
         );
       })
       .finally(() => {
+        endBusyCursor();
         subiendoSupabaseDesdeRespaldo = false;
         render();
       });
@@ -2535,6 +2527,7 @@ function bindPanelEvents(root: HTMLElement): void {
     const file = input.files?.[0];
     input.value = "";
     if (!file) return;
+    beginBusyCursor();
     try {
       const text = await file.text();
       const r = respaldoJsonAEstado(text);
@@ -2551,6 +2544,8 @@ function bindPanelEvents(root: HTMLElement): void {
       respaldoPendiente = null;
       setMsg("error", "No se pudo leer el archivo.");
       render();
+    } finally {
+      endBusyCursor();
     }
   });
 
@@ -2568,6 +2563,7 @@ function bindPanelEvents(root: HTMLElement): void {
     partidoGalletasBorrador = [];
     partidoFormBorrador = null;
     estado = nuevo;
+    beginBusyCursor();
     void guardar(estado)
       .then(() => {
         setMsg(
@@ -2586,6 +2582,9 @@ function bindPanelEvents(root: HTMLElement): void {
             : "No se pudo guardar en este navegador (almacenamiento lleno o bloqueado)."
         );
         render();
+      })
+      .finally(() => {
+        endBusyCursor();
       });
   });
 
@@ -2695,7 +2694,7 @@ function bindPanelEvents(root: HTMLElement): void {
     const ids = [...checks].map((c) => c.value);
     equiposSeleccionCache = ids;
     const seleccionados = jugadoresSeleccionadosParaSorteo(ids);
-    withFutbolWaitCursor(() => {
+    runWithBusyCursorSync(() => {
       const idsGalletasSorteo =
         equiposGalletasSorteo.length > 0 ? new Set(equiposGalletasSorteo.map((g) => g.id)) : undefined;
       const res = armarDosOpcionesEquipos(
@@ -2733,7 +2732,7 @@ function bindPanelEvents(root: HTMLElement): void {
     const seleccionados = jugadoresSeleccionadosParaSorteo(ids);
     const idsGalletasSorteo =
       equiposGalletasSorteo.length > 0 ? new Set(equiposGalletasSorteo.map((g) => g.id)) : undefined;
-    withFutbolWaitCursor(() => {
+    runWithBusyCursorSync(() => {
       const res = armarDosOpcionesEquipos(
         seleccionados,
         encuentro,
@@ -2828,8 +2827,10 @@ function renderPantallaLogin(): void {
       errEl.textContent = "";
     }
     try {
-      await iniciarSesionUsuario(usuario, password);
-      await bootstrapApp();
+      await runWithBusyCursorAsync(async () => {
+        await iniciarSesionUsuario(usuario, password);
+        await bootstrapApp();
+      });
     } catch (ex) {
       if (errEl) {
         errEl.textContent = errDetalle(ex);
@@ -2856,18 +2857,20 @@ async function bootstrapApp(): Promise<void> {
 }
 
 async function bootstrap(): Promise<void> {
-  if (isSupabaseConfigured()) {
-    await cargarSesionYRol();
-    const sb = getSupabase();
-    const {
-      data: { session },
-    } = await sb.auth.getSession();
-    if (!session) {
-      renderPantallaLogin();
-      return;
+  await runWithBusyCursorAsync(async () => {
+    if (isSupabaseConfigured()) {
+      await cargarSesionYRol();
+      const sb = getSupabase();
+      const {
+        data: { session },
+      } = await sb.auth.getSession();
+      if (!session) {
+        renderPantallaLogin();
+        return;
+      }
     }
-  }
-  await bootstrapApp();
+    await bootstrapApp();
+  });
 }
 
 inicializarTemaDesdeUrlYLocalStorage();

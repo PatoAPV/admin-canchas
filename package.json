@@ -1,0 +1,22 @@
+{
+  "name": "admin-canchas",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc && vite build",
+    "preview": "vite preview",
+    "import-supabase": "tsx scripts/import-json-to-supabase.ts"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.1",
+    "dotenv": "^16.4.7",
+    "tsx": "^4.19.2",
+    "typescript": "^5.6.3",
+    "vite": "^5.4.11"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.103.0"
+  }
+}

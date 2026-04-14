@@ -828,6 +828,50 @@ table.cuadratura-jugador-tabla tfoot tr:last-child td {
   min-width: 140px;
 }
 
+.equipos-encuentro-y-galletas {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 0.75rem 1.25rem;
+}
+
+.equipos-label-encuentro {
+  flex: 0 1 auto;
+}
+
+.equipos-galletas-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 0.5rem 0.65rem;
+}
+
+.equipos-galletas-num input {
+  width: 3.25rem;
+  min-width: 0;
+}
+
+.equipos-galletas-sorteo-subtitulo {
+  grid-column: 1 / -1;
+  margin: 0.5rem 0 0.15rem;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--muted);
+}
+
+.equipos-galleta-sorteo-fila {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.35rem;
+  opacity: 0.95;
+}
+
+.equipos-galleta-sorteo-fila input[type="checkbox"] {
+  margin-top: 0.2rem;
+  flex-shrink: 0;
+  cursor: not-allowed;
+}
+
 .equipos-seleccion-count {
   margin: 0 0 0.6rem;
   font-size: 0.95rem;

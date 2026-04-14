@@ -136,6 +136,12 @@ function jugadoresPartidosYEquipos(lista: Jugador[]): Jugador[] {
   return lista.filter((j) => !esJugadorSoloContabilidad(j));
 }
 
+/** Al agregar una galleta, «Carga a» usa a «Pato» si existe en la lista; si no, el primero. */
+function idJugadorGalletaNuevaDefecto(jugadoresEnLista: Jugador[]): string {
+  const pato = jugadoresEnLista.find((j) => j.nombre.trim().toLowerCase() === "pato");
+  return pato?.id ?? jugadoresEnLista[0]!.id;
+}
+
 /** URL del cursor (public/soccer-cursor.svg); absoluta para que el navegador lo cargue bien. */
 function urlCursorBalonSoccer(): string {
   const base = import.meta.env.BASE_URL;
@@ -232,8 +238,32 @@ let ultimoEquipos: VistaDosOpcionesEquipos | null = null;
 let encuentroPorEquipo: EncuentroPorEquipo = 6;
 /** Conserva los checks al cambiar 6v6 / 7v7 / etc. */
 let equiposSeleccionCache: string[] = [];
+/** Fichas solo para el sorteo en Equipos (no se guardan como jugadores). Volante, destreza 5. */
+let equiposGalletasSorteo: { id: string; nombre: string }[] = [];
 /** Evita repetir el calentamiento JIT del sorteo de equipos. */
 let equiposSorteoWarmupListo = false;
+
+function jugadorSintesisGalletaSorteo(g: { id: string; nombre: string }): Jugador {
+  return {
+    id: g.id,
+    nombre: g.nombre,
+    posiciones: ["volante"],
+    destreza: 5,
+    saldo: 0,
+  };
+}
+
+function jugadoresSeleccionadosParaSorteo(ids: string[]): Jugador[] {
+  return ids
+    .map((id) => {
+      const g = equiposGalletasSorteo.find((x) => x.id === id);
+      if (g) return jugadorSintesisGalletaSorteo(g);
+      const j = estado.jugadores.find((jj) => jj.id === id);
+      if (!j || esJugadorSoloContabilidad(j)) return undefined;
+      return j;
+    })
+    .filter((j): j is Jugador => j !== undefined);
+}
 
 function intentarCalentarMotorEquipos(): void {
   if (equiposSorteoWarmupListo) return;
@@ -663,7 +693,9 @@ function render(): void {
     const px = estado.partidos.find((p) => p.id === agregarJugadoresPartidoId);
     if (!px || px.jugadorIds.length > 0) agregarJugadoresPartidoId = null;
   }
+  const idsGalletasEquipos = new Set(equiposGalletasSorteo.map((g) => g.id));
   equiposSeleccionCache = equiposSeleccionCache.filter((id) => {
+    if (idsGalletasEquipos.has(id)) return true;
     const j = estado.jugadores.find((x) => x.id === id);
     return j != null && !esJugadorSoloContabilidad(j);
   });
@@ -1612,7 +1644,7 @@ function panelPartidos(): string {
             b.incluida ? "checked" : ""
           }${disP} /> Jugó</label>
           <input type="text" class="galleta-nombre" name="galleta-nombre-${escapeHtml(b.id)}" placeholder="Nombre galleta" value="${escapeHtml(b.nombre)}" autocomplete="off"${disP} />
-          <input type="number" class="galleta-monto" name="galleta-monto-${escapeHtml(b.id)}" min="1" step="1" placeholder="Monto" value="${escapeHtml(b.monto)}"${disP} />
+          <input type="number" class="galleta-monto" name="galleta-monto-${escapeHtml(b.id)}" min="0" step="1" placeholder="0 permitido" value="${escapeHtml(b.monto)}"${disP} />
           <label class="galleta-fila-partido-paga">Carga a
             <select class="galleta-paga" name="galleta-paga-${escapeHtml(b.id)}"${disP}>${optsPagaSelect(b.cargoAJugadorId)}</select>
           </label>
@@ -1780,6 +1812,8 @@ function panelEquipos(): string {
   const disReglas = !puedeEscribirEnPestanaActual() ? " disabled" : "";
   const totalNecesarios = encuentroPorEquipo * 2;
   const jugEq = jugadoresPartidosYEquipos(estado.jugadores);
+  const poolSorteo = jugEq.length + equiposGalletasSorteo.length;
+  const puedeArmarEquipos = puedeInteractuarSorteoEquipos() && poolSorteo >= totalNecesarios;
   const opts = jugEq
     .slice()
     .sort((a, b) => a.nombre.localeCompare(b.nombre, "es"))
@@ -1789,6 +1823,22 @@ function panelEquipos(): string {
       return `<label><input type="checkbox" name="eq" value="${j.id}"${checked}${disSorteo} /> ${escapeHtml(j.nombre)} <span style="color:var(--muted);font-size:0.82rem">(${escapeHtml(pos)} · dest. ${j.destreza})</span></label>`;
     })
     .join("");
+  const filasGalletasEquipos = equiposGalletasSorteo
+    .map(
+      (g) => `
+    <label class="equipos-galleta-sorteo-fila">
+      <input type="checkbox" name="eq" value="${escapeHtml(g.id)}" checked disabled${disSorteo} aria-checked="true" />
+      <span>${escapeHtml(g.nombre)} <span style="color:var(--muted);font-size:0.82rem">(Volante · dest. 5 · solo sorteo)</span></span>
+    </label>`
+    )
+    .join("");
+  const tituloGalletasSorteo = filasGalletasEquipos
+    ? `<p class="equipos-galletas-sorteo-subtitulo">Galletas (solo sorteo)</p>`
+    : "";
+  const bloqueChecksJugadores =
+    !opts && !filasGalletasEquipos
+      ? "<span style='color:var(--muted)'>Agrega jugadores con sus posiciones.</span>"
+      : `${opts}${tituloGalletasSorteo}${filasGalletasEquipos}`;
 
   const selectEncuentro = ENCUENTRO_OPCIONES.map(
     (n) =>
@@ -1884,15 +1934,24 @@ function panelEquipos(): string {
       </p>
       ${bloqueReglas}
       <form id="form-equipos">
-        <div class="form-row">
-          <label>Tamaño del encuentro
+        <div class="form-row equipos-encuentro-y-galletas">
+          <label class="equipos-label-encuentro">Tamaño del encuentro
             <select id="sel-encuentro" name="encuentro"${disSorteo}>${selectEncuentro}</select>
           </label>
+          <div class="equipos-galletas-toolbar">
+            <label class="equipos-galletas-num">N.º galletas
+              <input type="number" id="equipos-num-galletas-sorteo" min="1" max="30" value="1" step="1"${disSorteo} />
+            </label>
+            <button type="button" class="secondary" id="btn-equipos-agregar-galletas"${disSorteo}>Agregar galletas</button>
+            <button type="button" class="secondary" id="btn-equipos-borrar-galletas"${disSorteo}${
+              equiposGalletasSorteo.length === 0 ? " disabled" : ""
+            }>Borrar galletas</button>
+          </div>
         </div>
         <p style="margin:0.75rem 0 0.35rem;font-size:0.85rem;color:var(--muted)">Jugadores inscritos (necesitás ${totalNecesarios}):</p>
         <p id="equipos-contador" class="equipos-seleccion-count${equiposSeleccionCache.length === totalNecesarios ? " equipos-count-ok" : equiposSeleccionCache.length > 0 ? " equipos-count-parcial" : ""}" aria-live="polite">Seleccionados: ${equiposSeleccionCache.length} de ${totalNecesarios}</p>
-        <div class="jugador-checks" style="max-height:280px">${opts || "<span style='color:var(--muted)'>Agrega jugadores con sus posiciones.</span>"}</div>
-        <button type="submit" class="primary" ${jugEq.length >= 2 && puedeInteractuarSorteoEquipos() ? "" : "disabled"}>Sortear equipos</button>
+        <div class="jugador-checks" style="max-height:280px">${bloqueChecksJugadores}</div>
+        <button type="submit" class="primary" ${puedeArmarEquipos ? "" : "disabled"}>Sortear equipos</button>
       </form>
     </div>
     ${equiposHtml}`;
@@ -2222,8 +2281,8 @@ function bindPanelEvents(root: HTMLElement): void {
       id: nuevoId(),
       incluida: true,
       nombre: "",
-      monto: "",
-      cargoAJugadorId: listaOrd[0].id,
+      monto: "0",
+      cargoAJugadorId: idJugadorGalletaNuevaDefecto(listaOrd),
     });
     render();
   });
@@ -2267,8 +2326,8 @@ function bindPanelEvents(root: HTMLElement): void {
         render();
         return;
       }
-      if (!Number.isFinite(gm) || gm <= 0) {
-        setMsg("error", `Ingresá un monto mayor a cero para la galleta «${nombre}».`);
+      if (!Number.isFinite(gm) || gm < 0) {
+        setMsg("error", `Ingresá un monto válido (cero o mayor) para la galleta «${nombre}».`);
         render();
         return;
       }
@@ -2463,6 +2522,7 @@ function bindPanelEvents(root: HTMLElement): void {
     editandoId = null;
     ultimoEquipos = null;
     equiposSeleccionCache = [];
+    equiposGalletasSorteo = [];
     eliminarJugadorPendienteId = null;
     eliminarPartidoPendienteId = null;
     agregarJugadoresPartidoId = null;
@@ -2508,6 +2568,31 @@ function bindPanelEvents(root: HTMLElement): void {
     render();
   });
 
+  root.querySelector("#btn-equipos-agregar-galletas")?.addEventListener("click", () => {
+    if (!puedeInteractuarSorteoEquipos()) return;
+    const inp = root.querySelector<HTMLInputElement>("#equipos-num-galletas-sorteo");
+    let n = Math.round(Number(inp?.value ?? 1));
+    if (!Number.isFinite(n) || n < 1) n = 1;
+    if (n > 30) n = 30;
+    const base = equiposGalletasSorteo.length;
+    const nuevas: { id: string; nombre: string }[] = [];
+    for (let i = 0; i < n; i++) {
+      nuevas.push({ id: nuevoId(), nombre: `Galleta ${base + i + 1}` });
+    }
+    equiposGalletasSorteo.push(...nuevas);
+    equiposSeleccionCache = [...equiposSeleccionCache, ...nuevas.map((x) => x.id)];
+    mensaje = null;
+    render();
+  });
+
+  root.querySelector("#btn-equipos-borrar-galletas")?.addEventListener("click", () => {
+    const gIds = new Set(equiposGalletasSorteo.map((g) => g.id));
+    equiposGalletasSorteo = [];
+    equiposSeleccionCache = equiposSeleccionCache.filter((id) => !gIds.has(id));
+    mensaje = null;
+    render();
+  });
+
   const formEquipos = root.querySelector<HTMLFormElement>("#form-equipos");
   if (formEquipos) {
     const actualizarContadorEquipos = (): void => {
@@ -2539,9 +2624,7 @@ function bindPanelEvents(root: HTMLElement): void {
     const checks = form.querySelectorAll<HTMLInputElement>('input[name="eq"]:checked');
     const ids = [...checks].map((c) => c.value);
     equiposSeleccionCache = ids;
-    const seleccionados: Jugador[] = ids
-      .map((id) => estado.jugadores.find((j) => j.id === id))
-      .filter((j): j is Jugador => j !== undefined);
+    const seleccionados = jugadoresSeleccionadosParaSorteo(ids);
     withFutbolWaitCursor(() => {
       const res = armarDosOpcionesEquipos(seleccionados, encuentro, estado.reglasEquiposSeparacion);
       if (!res.ok) {
@@ -2570,9 +2653,7 @@ function bindPanelEvents(root: HTMLElement): void {
     const checks = form.querySelectorAll<HTMLInputElement>('input[name="eq"]:checked');
     const ids = [...checks].map((c) => c.value);
     equiposSeleccionCache = ids;
-    const seleccionados: Jugador[] = ids
-      .map((id) => estado.jugadores.find((j) => j.id === id))
-      .filter((j): j is Jugador => j !== undefined);
+    const seleccionados = jugadoresSeleccionadosParaSorteo(ids);
     withFutbolWaitCursor(() => {
       const res = armarDosOpcionesEquipos(seleccionados, encuentro, estado.reglasEquiposSeparacion);
       if (!res.ok) {

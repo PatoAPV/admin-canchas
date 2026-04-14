@@ -120,7 +120,7 @@ export function normalizarEstadoImportado(parsed: unknown): EstadoApp | null {
           )
             continue;
           const gm = Math.round(Number(g.monto));
-          if (!Number.isFinite(gm) || gm <= 0) continue;
+          if (!Number.isFinite(gm) || gm < 0) continue;
           galletas.push({
             id: g.id,
             nombre: g.nombre.trim(),
@@ -576,7 +576,7 @@ export function registrarPartido(
     const nombre = (g.nombre ?? "").trim();
     const gm = Math.round(Number(g.monto));
     if (!nombre) return { ok: false, error: "Cada galleta marcada necesita un nombre." };
-    if (!Number.isFinite(gm) || gm <= 0) return { ok: false, error: `Monto inválido para la galleta «${nombre}».` };
+    if (!Number.isFinite(gm) || gm < 0) return { ok: false, error: `Monto inválido para la galleta «${nombre}» (cero o mayor).` };
     const pj = estado.jugadores.find((x) => x.id === g.cargoAJugadorId);
     if (!pj) return { ok: false, error: `Jugador que paga no encontrado (galleta «${nombre}»).` };
     galletasNorm.push({

@@ -147,6 +147,21 @@ function llenarUnEquipoDesdeJugadores(
   return line;
 }
 
+/** Galletas de sorteo: si hay un número par, mismo cupo en A y B; si es impar, diferencia de exactamente 1. */
+function particionCumpleBalanceGalletas(
+  jugA: Jugador[],
+  jugB: Jugador[],
+  idsGalletasSorteo: ReadonlySet<string> | undefined
+): boolean {
+  if (!idsGalletasSorteo || idsGalletasSorteo.size === 0) return true;
+  const gA = jugA.filter((j) => idsGalletasSorteo.has(j.id)).length;
+  const gB = jugB.filter((j) => idsGalletasSorteo.has(j.id)).length;
+  const total = gA + gB;
+  if (total === 0) return true;
+  if (total % 2 === 0) return gA === gB;
+  return Math.abs(gA - gB) === 1;
+}
+
 function jugadoresCumplenReglasSeparacion(
   jugA: Jugador[],
   jugB: Jugador[],
@@ -198,7 +213,8 @@ export function equiposCumplenReglasSeparacion(
 export function armarEquiposAleatorio(
   jugadoresSeleccionados: Jugador[],
   jugadoresPorEquipo: EncuentroPorEquipo,
-  reglasSeparacion: readonly ParReglaSeparacion[] = []
+  reglasSeparacion: readonly ParReglaSeparacion[] = [],
+  idsGalletasSorteo?: ReadonlySet<string>
 ): ResultadoEquipos {
   const n = jugadoresPorEquipo;
   const total = n * 2;
@@ -218,6 +234,7 @@ export function armarEquiposAleatorio(
 
   let intentos = INTENTOS_PARTICION;
   if (reglasActivas.length > 0) intentos = Math.floor(intentos * 1.6);
+  if (idsGalletasSorteo && idsGalletasSorteo.size > 0) intentos = Math.floor(intentos * 1.45);
 
   let mejor: { ok: true; equipoA: LineUp[]; equipoB: LineUp[] } | null = null;
   let mejorScoreRoles = Infinity;
@@ -228,6 +245,7 @@ export function armarEquiposAleatorio(
     const orden = shuffle([...jugadoresSeleccionados]);
     const jugA = orden.slice(0, n);
     const jugB = orden.slice(n, total);
+    if (!particionCumpleBalanceGalletas(jugA, jugB, idsGalletasSorteo)) continue;
     if (!jugadoresCumplenReglasSeparacion(jugA, jugB, reglasActivas)) continue;
 
     const scoreRoles = scoreEquilibrioRolesJugadores(jugA, jugB);
@@ -260,11 +278,15 @@ export function armarEquiposAleatorio(
       reglasActivas.length > 0
         ? " Si tenés reglas de no juntar jugadores, puede que no haya reparto posible."
         : "";
+    const hintGalletas =
+      idsGalletasSorteo && idsGalletasSorteo.size > 0
+        ? " Con galletas de sorteo, cada equipo debe llevar la misma cantidad si son pares, o diferencia de una si son impares."
+        : "";
     return {
       ok: false,
       error:
         ultimoError ||
-        `No se pudieron armar equipos.${hint} Probá de nuevo o revisá las posiciones de los jugadores.`,
+        `No se pudieron armar equipos.${hint}${hintGalletas} Probá de nuevo o revisá las posiciones de los jugadores.`,
     };
   }
 
@@ -302,15 +324,26 @@ const INTENTOS_SEGUNDA_OPCION = 280;
 export function armarDosOpcionesEquipos(
   jugadoresSeleccionados: Jugador[],
   jugadoresPorEquipo: EncuentroPorEquipo,
-  reglasSeparacion: readonly ParReglaSeparacion[] = []
+  reglasSeparacion: readonly ParReglaSeparacion[] = [],
+  idsGalletasSorteo?: ReadonlySet<string>
 ): ResultadoDosOpcionesEquipos {
-  const r1 = armarEquiposAleatorio(jugadoresSeleccionados, jugadoresPorEquipo, reglasSeparacion);
+  const r1 = armarEquiposAleatorio(
+    jugadoresSeleccionados,
+    jugadoresPorEquipo,
+    reglasSeparacion,
+    idsGalletasSorteo
+  );
   if (!r1.ok) return r1;
   const k1 = partitionKeyEquipoA(r1.equipoA);
   let best: { equipoA: LineUp[]; equipoB: LineUp[] } | null = null;
   let bestBal = Infinity;
   for (let i = 0; i < INTENTOS_SEGUNDA_OPCION; i++) {
-    const t = armarEquiposAleatorio(jugadoresSeleccionados, jugadoresPorEquipo, reglasSeparacion);
+    const t = armarEquiposAleatorio(
+      jugadoresSeleccionados,
+      jugadoresPorEquipo,
+      reglasSeparacion,
+      idsGalletasSorteo
+    );
     if (!t.ok) continue;
     if (partitionKeyEquipoA(t.equipoA) === k1) continue;
     const bal = puntuacionBalanceDestreza(t.equipoA, t.equipoB);

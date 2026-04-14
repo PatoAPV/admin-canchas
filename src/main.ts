@@ -616,6 +616,21 @@ function renderModalAgregarJugadoresPartido(): string {
   const p = estado.partidos.find((x) => x.id === agregarJugadoresPartidoId);
   if (!p || p.jugadorIds.length > 0) return "";
   const disM = !puedeEscribirEnPestanaActual() ? " disabled" : "";
+  const galletasPartido = p.galletas ?? [];
+  const filasGalletasModal = galletasPartido
+    .map((g) => {
+      const nom = estado.jugadores.find((x) => x.id === g.cargoAJugadorId)?.nombre ?? "?";
+      return `<div class="partido-jugador-fila partido-jugador-fila--modal partido-jugador-fila--galleta-modal">
+        <label class="partido-jugador-check"><input type="checkbox" name="pj-add-galleta-resumen" checked disabled${disM} aria-label="Galleta (ya en el partido)" />
+        <span><strong>${escapeHtml(g.nombre)}</strong> <span style="color:var(--muted);font-size:0.82rem">· ${escapeHtml(fmtMoney(g.monto))} · carga a ${escapeHtml(nom)}</span></span></label>
+        <span class="partido-jugador-fila--galleta-camiseta" aria-hidden="true">—</span>
+      </div>`;
+    })
+    .join("");
+  const bloqueGalletasEnChecks =
+    galletasPartido.length === 0
+      ? ""
+      : `<p class="modal-partido-galletas-titulo">Galletas en este partido</p>${filasGalletasModal}`;
   const opts = jugadoresPartidosYEquipos(estado.jugadores)
     .slice()
     .sort((a, b) => a.nombre.localeCompare(b.nombre, "es"))
@@ -632,16 +647,34 @@ function renderModalAgregarJugadoresPartido(): string {
       </div>`;
     })
     .join("");
+  const tituloListaJugadores = bloqueGalletasEnChecks
+    ? `<p class="modal-partido-jugadores-titulo">Jugadores de la lista</p>`
+    : "";
+  const bloqueListaJugadores =
+    opts ||
+    "<span style='color:var(--muted)'>No hay jugadores en la lista. Agregalos en la pestaña Jugadores.</span>";
+  const lineaDlGalletas =
+    galletasPartido.length === 0
+      ? ""
+      : `<div><dt>Galletas</dt><dd>${galletasPartido
+          .map((g) => {
+            const nom = estado.jugadores.find((x) => x.id === g.cargoAJugadorId)?.nombre ?? "?";
+            return `${escapeHtml(g.nombre)} — ${escapeHtml(fmtMoney(g.monto))} (a ${escapeHtml(nom)})`;
+          })
+          .join("<br />")}</dd></div>`;
   return `
     <div class="modal-backdrop" id="modal-agregar-jugadores-partido" role="dialog" aria-modal="true" aria-labelledby="modal-agregar-jp-titulo">
       <div class="modal-dialog" role="document">
         <h2 id="modal-agregar-jp-titulo" class="modal-title">Agregar jugadores al partido</h2>
-        <p class="modal-lead">Este partido solo tenía arriendo/fecha. Al confirmar se guardan los jugadores y se descuenta el monto por jugador a cada uno marcado.</p>
+        <p class="modal-lead">Este partido solo tenía arriendo/fecha${
+          galletasPartido.length ? " (puede incluir galletas ya registradas)" : ""
+        }. Al confirmar se guardan los jugadores y se descuenta el monto por jugador a cada uno marcado.</p>
         <dl class="modal-detalles">
           <div><dt>Fecha</dt><dd>${escapeHtml(fmtFecha(p.fecha))}</dd></div>
           <div><dt>Cancha</dt><dd>${escapeHtml(fmtCanchaPartido(p.cancha))}</dd></div>
           <div><dt>Monto por jugador</dt><dd>${p.montoPorJugador > 0 ? escapeHtml(fmtMoney(p.montoPorJugador)) : "Pendiente (completar abajo)"}</dd></div>
           <div><dt>Arriendo</dt><dd>${escapeHtml(fmtMoney(p.valorArriendo))}</dd></div>
+          ${lineaDlGalletas}
         </dl>
         <form id="form-agregar-jugadores-partido">
           ${
@@ -654,7 +687,7 @@ function renderModalAgregarJugadoresPartido(): string {
               : ""
           }
           <p id="modal-agregar-jp-contador" class="equipos-seleccion-count" aria-live="polite">Marcados: 0</p>
-          <div class="jugador-checks jugador-checks--modal">${opts || "<span style='color:var(--muted)'>No hay jugadores en la lista. Agregalos en la pestaña Jugadores.</span>"}</div>
+          <div class="jugador-checks jugador-checks--modal">${bloqueGalletasEnChecks}${tituloListaJugadores}${bloqueListaJugadores}</div>
           <div class="form-row" style="margin-top:0.65rem">
             <label>Resultado del encuentro <span class="label-hint">(opcional)</span>
               <select name="resultado-encuentro-add-jp" id="resultado-encuentro-add-jp"${disM}>
@@ -1824,16 +1857,22 @@ function panelEquipos(): string {
     })
     .join("");
   const filasGalletasEquipos = equiposGalletasSorteo
-    .map(
-      (g) => `
-    <label class="equipos-galleta-sorteo-fila">
-      <input type="checkbox" name="eq" value="${escapeHtml(g.id)}" checked disabled${disSorteo} aria-checked="true" />
-      <span>${escapeHtml(g.nombre)} <span style="color:var(--muted);font-size:0.82rem">(Volante · dest. 5 · solo sorteo)</span></span>
-    </label>`
-    )
+    .map((g, idx) => {
+      const idx1 = idx + 1;
+      return `
+    <div class="equipos-galleta-sorteo-fila" data-galleta-sorteo-id="${escapeHtml(g.id)}">
+      <label class="equipos-galleta-sorteo-check-wrap">
+        <input type="checkbox" name="eq" value="${escapeHtml(g.id)}" checked disabled${disSorteo} aria-checked="true" />
+      </label>
+      <div class="equipos-galleta-sorteo-cuerpo">
+        <input type="text" class="equipos-galleta-sorteo-nombre" data-galleta-sorteo-idx="${idx1}" maxlength="120" value="${escapeAttr(g.nombre)}" autocomplete="off" placeholder="Ej. Hugo Ramírez"${disSorteo} aria-label="Nombre visible en equipos para galleta ${idx1}" />
+        <span class="equipos-galleta-sorteo-meta">Volante · dest. 5 · solo sorteo</span>
+      </div>
+    </div>`;
+    })
     .join("");
   const tituloGalletasSorteo = filasGalletasEquipos
-    ? `<p class="equipos-galletas-sorteo-subtitulo">Galletas (solo sorteo)</p>`
+    ? `<p class="equipos-galletas-sorteo-subtitulo">Galletas (solo sorteo) — podés cambiar el nombre para identificarlos en el resultado.</p>`
     : "";
   const bloqueChecksJugadores =
     !opts && !filasGalletasEquipos
@@ -1927,9 +1966,9 @@ function panelEquipos(): string {
       <p style="margin:0 0 0.75rem;font-size:0.88rem;color:var(--muted)">
         ${
           esLectorApp() && isSupabaseConfigured()
-            ? `La repartición entre equipo A y B es <strong>al azar</strong>. Se intenta equilibrar cuántos van con rol de <strong>defensa</strong> y <strong>volante</strong> en cada equipo; en <strong>arquero</strong> y <strong>delantero</strong> no se fuerza el mismo reparto. Si <strong>nadie</strong> declaró arquero entre los elegidos, cualquiera puede ir al arco. Las dos opciones del resultado son dos sorteos distintos con el mismo criterio.`
+            ? `La repartición entre equipo A y B es <strong>al azar</strong>. Se intenta equilibrar cuántos van con rol de <strong>defensa</strong> y <strong>volante</strong> en cada equipo; en <strong>arquero</strong> y <strong>delantero</strong> no se fuerza el mismo reparto. Si <strong>nadie</strong> declaró arquero entre los elegidos, cualquiera puede ir al arco. Las dos opciones del resultado son dos sorteos distintos con el mismo criterio. Las <strong>galletas de sorteo</strong> van repartidas: si son en cantidad par, la misma cantidad en cada equipo; si son impares, con diferencia de una entre equipos.`
             : `La repartición de jugadores entre A y B es <strong>al azar</strong>, respetando solo las <strong>reglas especiales</strong> (abajo). Se intenta equilibrar cuántos van con rol de <strong>defensa</strong> y <strong>volante</strong> en cada equipo; en <strong>arquero</strong> y <strong>delantero</strong> no se fuerza el mismo reparto entre equipos. Si <strong>nadie</strong> declaró arquero entre los elegidos, cualquiera puede ir al arco.
-        Las dos opciones que ves son dos sorteos distintos con el mismo criterio; la segunda suele tener mejor equilibrio de suma de destrezas.`
+        Las dos opciones que ves son dos sorteos distintos con el mismo criterio; la segunda suele tener mejor equilibrio de suma de destrezas. Las <strong>galletas de sorteo</strong> van repartidas: si son en cantidad par, la misma cantidad en cada equipo; si son impares, con diferencia de una entre equipos.`
         }
       </p>
       ${bloqueReglas}
@@ -2612,6 +2651,37 @@ function bindPanelEvents(root: HTMLElement): void {
     formEquipos.addEventListener("change", (e) => {
       if ((e.target as HTMLElement).matches('input[name="eq"]')) actualizarContadorEquipos();
     });
+    formEquipos.addEventListener("input", (ev) => {
+      const inp = ev.target as HTMLInputElement;
+      if (!inp.classList.contains("equipos-galleta-sorteo-nombre")) return;
+      const id = inp.closest("[data-galleta-sorteo-id]")?.getAttribute("data-galleta-sorteo-id");
+      if (!id) return;
+      const entry = equiposGalletasSorteo.find((x) => x.id === id);
+      if (entry) entry.nombre = inp.value;
+    });
+    formEquipos.addEventListener(
+      "focusout",
+      (ev) => {
+        const inp = ev.target as HTMLInputElement;
+        if (!inp.classList.contains("equipos-galleta-sorteo-nombre")) return;
+        const id = inp.closest("[data-galleta-sorteo-id]")?.getAttribute("data-galleta-sorteo-id");
+        if (!id) return;
+        const entry = equiposGalletasSorteo.find((x) => x.id === id);
+        if (!entry) return;
+        let idx1 = parseInt(String(inp.dataset.galletaSorteoIdx ?? ""), 10);
+        if (!Number.isFinite(idx1) || idx1 < 1) {
+          idx1 = equiposGalletasSorteo.findIndex((x) => x.id === id) + 1;
+        }
+        const t = inp.value.trim();
+        if (t === "") {
+          entry.nombre = `Galleta ${idx1}`;
+          inp.value = entry.nombre;
+        } else {
+          entry.nombre = t;
+        }
+      },
+      true
+    );
     actualizarContadorEquipos();
   }
 
@@ -2626,7 +2696,14 @@ function bindPanelEvents(root: HTMLElement): void {
     equiposSeleccionCache = ids;
     const seleccionados = jugadoresSeleccionadosParaSorteo(ids);
     withFutbolWaitCursor(() => {
-      const res = armarDosOpcionesEquipos(seleccionados, encuentro, estado.reglasEquiposSeparacion);
+      const idsGalletasSorteo =
+        equiposGalletasSorteo.length > 0 ? new Set(equiposGalletasSorteo.map((g) => g.id)) : undefined;
+      const res = armarDosOpcionesEquipos(
+        seleccionados,
+        encuentro,
+        estado.reglasEquiposSeparacion,
+        idsGalletasSorteo
+      );
       if (!res.ok) {
         setMsg("error", res.error);
         ultimoEquipos = null;
@@ -2654,8 +2731,15 @@ function bindPanelEvents(root: HTMLElement): void {
     const ids = [...checks].map((c) => c.value);
     equiposSeleccionCache = ids;
     const seleccionados = jugadoresSeleccionadosParaSorteo(ids);
+    const idsGalletasSorteo =
+      equiposGalletasSorteo.length > 0 ? new Set(equiposGalletasSorteo.map((g) => g.id)) : undefined;
     withFutbolWaitCursor(() => {
-      const res = armarDosOpcionesEquipos(seleccionados, encuentro, estado.reglasEquiposSeparacion);
+      const res = armarDosOpcionesEquipos(
+        seleccionados,
+        encuentro,
+        estado.reglasEquiposSeparacion,
+        idsGalletasSorteo
+      );
       if (!res.ok) {
         setMsg("error", res.error);
         render();

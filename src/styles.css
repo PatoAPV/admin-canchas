@@ -866,10 +866,45 @@ table.cuadratura-jugador-tabla tfoot tr:last-child td {
   opacity: 0.95;
 }
 
-.equipos-galleta-sorteo-fila input[type="checkbox"] {
+.equipos-galleta-sorteo-check-wrap {
+  display: flex;
+  align-items: flex-start;
   margin-top: 0.2rem;
   flex-shrink: 0;
+}
+
+.equipos-galleta-sorteo-fila input[type="checkbox"] {
+  flex-shrink: 0;
   cursor: not-allowed;
+}
+
+.equipos-galleta-sorteo-cuerpo {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.equipos-galleta-sorteo-nombre {
+  width: 100%;
+  max-width: 22rem;
+  font-size: 0.9rem;
+  padding: 0.28rem 0.45rem;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--surface);
+  color: var(--text);
+}
+
+.equipos-galleta-sorteo-nombre:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+}
+
+.equipos-galleta-sorteo-meta {
+  font-size: 0.78rem;
+  color: var(--muted);
 }
 
 .equipos-seleccion-count {
@@ -943,6 +978,30 @@ table.cuadratura-jugador-tabla tfoot tr:last-child td {
 
 .jugador-checks--modal .partido-jugador-fila {
   padding: 0.2rem 0;
+}
+
+.modal-partido-galletas-titulo,
+.modal-partido-jugadores-titulo {
+  grid-column: 1 / -1;
+  margin: 0.35rem 0 0.2rem;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--muted);
+}
+
+.modal-partido-jugadores-titulo {
+  margin-top: 0.65rem;
+}
+
+.partido-jugador-fila--galleta-modal .partido-jugador-check {
+  color: var(--text);
+}
+
+.partido-jugador-fila--galleta-camiseta {
+  min-width: 5.5rem;
+  text-align: end;
+  font-size: 0.85rem;
+  color: var(--muted);
 }
 
 .camiseta-badge {

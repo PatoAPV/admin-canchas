@@ -15,13 +15,22 @@ export function getClubId(): string {
   return clubId.trim();
 }
 
+/** Tras cerrar sesión se fuerza un cliente nuevo (evita estado mezclado). */
+export function resetSupabaseClient(): void {
+  client = null;
+}
+
 export function getSupabase(): SupabaseClient {
   if (!isSupabaseConfigured()) {
     throw new Error("Supabase no está configurado (VITE_SUPABASE_URL, VITE_SUPABASE_ANON_KEY, VITE_CLUB_ID).");
   }
   if (!client) {
     client = createClient(url!, anon!, {
-      auth: { persistSession: false, autoRefreshToken: false },
+      auth: {
+        persistSession: true,
+        autoRefreshToken: true,
+        storage: typeof localStorage !== "undefined" ? localStorage : undefined,
+      },
     });
   }
   return client;

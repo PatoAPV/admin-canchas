@@ -127,6 +127,25 @@ header.app-header h1 {
   letter-spacing: -0.02em;
 }
 
+header.app-header .app-header-userrow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.75rem;
+  margin-top: 0.25rem;
+  font-size: 0.9rem;
+}
+
+header.app-header .app-header-user {
+  font-weight: 600;
+  color: var(--text);
+}
+
+header.app-header .app-header-logout {
+  font-size: 0.82rem;
+  padding: 0.35rem 0.65rem;
+}
+
 header.app-header p {
   margin: 0;
   color: var(--muted);
@@ -362,26 +381,35 @@ table.informe-matriz .informe-matriz-pie-dash {
   background: var(--surface2);
 }
 
-.informe-matriz-resumen-fin {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: space-between;
-  gap: 0.65rem 1rem;
+.informe-resumen-totales {
   margin-top: 1rem;
-  font-size: 0.88rem;
-}
-
-.informe-matriz-resumen-izq {
   display: flex;
-  flex-wrap: wrap;
-  gap: 0.65rem 1rem;
-  flex: 1 1 auto;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0.35rem;
+  font-size: 0.92rem;
+  line-height: 1.45;
 }
 
-.informe-matriz-resumen-adeudado {
-  flex-shrink: 0;
-  margin-inline-start: auto;
+.informe-resumen-linea {
+  text-align: right;
+  width: 100%;
+}
+
+.informe-resumen-linea strong {
+  margin-right: 0.45rem;
+}
+
+.informe-resumen-linea--pos {
+  color: var(--success);
+}
+
+.informe-resumen-linea--neg {
+  color: var(--danger);
+}
+
+.informe-resumen-linea--deuda {
+  color: var(--danger);
 }
 
 .informe-matriz-chip {
@@ -450,6 +478,7 @@ label {
 }
 
 input[type="text"],
+input[type="password"],
 input[type="number"],
 input[type="date"],
 input[type="datetime-local"],
@@ -1181,6 +1210,24 @@ table.cuadratura-jugador-tabla tfoot tr:last-child td {
   flex-wrap: wrap;
 }
 
+table.jugadores-tabla .jugadores-th-acciones {
+  width: 9.5rem;
+  min-width: 9.5rem;
+}
+
+table.jugadores-tabla td.inline-actions--jugadores {
+  width: 9.5rem;
+  min-width: 9.5rem;
+  vertical-align: middle;
+}
+
+.jugadores-acciones-vacio {
+  display: inline-block;
+  min-width: 1.25rem;
+  color: var(--muted);
+  text-align: center;
+}
+
 .modal-backdrop {
   position: fixed;
   inset: 0;
@@ -1276,4 +1323,67 @@ button.primary.modal-btn-peligro:hover {
 html.equipos-sorteando,
 html.equipos-sorteando * {
   cursor: var(--equipos-cursor-futbol, wait) !important;
+}
+
+/* Pantalla de login (Supabase) */
+.auth-login-screen {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.5rem;
+  box-sizing: border-box;
+}
+
+.auth-login-inner {
+  width: 100%;
+  max-width: 22rem;
+  margin: 0;
+}
+
+.auth-login-logo-wrap {
+  display: flex;
+  justify-content: center;
+  margin: 0 0 1rem;
+}
+
+.auth-login-logo {
+  display: block;
+  width: 15rem;
+  height: auto;
+  max-height: 15rem;
+  object-fit: contain;
+}
+
+.auth-login-lead {
+  margin: 0 0 1.15rem;
+  text-align: center;
+  font-size: 0.95rem;
+  line-height: 1.45;
+  color: var(--text);
+}
+
+.auth-login-form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.auth-login-field-label {
+  margin: 0;
+}
+
+.auth-login-field-label .auth-login-input {
+  min-width: 0;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.auth-login-submit {
+  margin-top: 0.35rem;
+  width: 100%;
+}
+
+.auth-login-error {
+  margin: 0.85rem 0 0;
 }

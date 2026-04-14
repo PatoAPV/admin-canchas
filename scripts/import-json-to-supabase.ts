@@ -5,8 +5,9 @@
  *   npm run import-supabase
  *   npm run import-supabase -- ruta/al/archivo.json
  *
- * Variables (en .env): SUPABASE_URL / VITE_SUPABASE_URL, SUPABASE_ANON_KEY / VITE_SUPABASE_ANON_KEY,
- * SUPABASE_CLUB_ID / VITE_CLUB_ID.
+ * Variables (en .env): SUPABASE_URL / VITE_SUPABASE_URL, SUPABASE_CLUB_ID / VITE_CLUB_ID.
+ * Clave API: preferí **SUPABASE_SERVICE_ROLE_KEY** (Project Settings → API) para que el import
+ * no dependa de RLS. No uses la service role en el front (Vite).
  */
 import { createClient } from "@supabase/supabase-js";
 import { config } from "dotenv";
@@ -26,17 +27,26 @@ function envPrimero(...keys: string[]): string {
 config({ path: resolve(process.cwd(), ".env") });
 
 const url = envPrimero("SUPABASE_URL", "VITE_SUPABASE_URL");
-const key = envPrimero("SUPABASE_ANON_KEY", "VITE_SUPABASE_ANON_KEY");
+const serviceKey = envPrimero("SUPABASE_SERVICE_ROLE_KEY");
+const anonKey = envPrimero("SUPABASE_ANON_KEY", "VITE_SUPABASE_ANON_KEY");
+const key = serviceKey || anonKey;
 const clubId = envPrimero("SUPABASE_CLUB_ID", "VITE_CLUB_ID");
 
 if (!url || !key || !clubId) {
   console.error(
     "Faltan variables de entorno. Definí en .env:\n" +
       "  SUPABASE_URL o VITE_SUPABASE_URL\n" +
-      "  SUPABASE_ANON_KEY o VITE_SUPABASE_ANON_KEY\n" +
+      "  SUPABASE_SERVICE_ROLE_KEY (recomendado) o SUPABASE_ANON_KEY / VITE_SUPABASE_ANON_KEY\n" +
       "  SUPABASE_CLUB_ID o VITE_CLUB_ID (UUID del club en la migración SQL)"
   );
   process.exit(1);
+}
+
+if (!serviceKey) {
+  console.warn(
+    "Aviso: sin SUPABASE_SERVICE_ROLE_KEY el import puede fallar si en Supabase hay RLS que exige usuario autenticado.\n" +
+      "  Copiá la clave «service_role» (solo para scripts locales, nunca en el navegador)."
+  );
 }
 
 const argPath = process.argv[2];

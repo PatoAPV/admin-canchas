@@ -12,8 +12,13 @@ import type {
   ReglaEquiposSeparacion,
   ResultadoEncuentroPartido,
 } from "./types";
-import { isSupabaseConfigured } from "./supabase/client";
-import { cargarEstadoDesdeSupabase, guardarEstadoEnSupabase } from "./supabase/repository";
+import { getAppRole } from "./supabase/auth";
+import { getClubId, getSupabase, isSupabaseConfigured } from "./supabase/client";
+import {
+  cargarEstadoDesdeSupabase,
+  guardarEstadoEnSupabase,
+  sincronizarEstadoOperadorEnSupabase,
+} from "./supabase/repository";
 
 const POS_VALIDAS: readonly Posicion[] = ["arquero", "defensa", "volante", "delantero"];
 
@@ -245,13 +250,26 @@ export function estadoTieneContenido(e: EstadoApp): boolean {
 
 export async function guardar(estado: EstadoApp): Promise<void> {
   if (isSupabaseConfigured()) {
+    const rol = getAppRole();
+    if (rol === "lector" || rol === null) {
+      try {
+        localStorage.setItem(KEY, JSON.stringify(estado));
+      } catch {
+        /* ignorar */
+      }
+      return;
+    }
     /* Primero el navegador: si Supabase falla a mitad del borrado+insert, no perdés el estado al recargar. */
     try {
       localStorage.setItem(KEY, JSON.stringify(estado));
     } catch {
       /* ignorar cuota / privado */
     }
-    await guardarEstadoEnSupabase(estado);
+    if (rol === "operador") {
+      await sincronizarEstadoOperadorEnSupabase(getSupabase(), getClubId(), estado);
+    } else {
+      await guardarEstadoEnSupabase(estado);
+    }
     return;
   }
   localStorage.setItem(KEY, JSON.stringify(estado));

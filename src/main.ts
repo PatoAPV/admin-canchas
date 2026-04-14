@@ -1,5 +1,14 @@
 import "./styles.css";
-import { isSupabaseConfigured } from "./supabase/client";
+import {
+  cargarSesionYRol,
+  cerrarSesion,
+  esAdminApp,
+  esLectorApp,
+  esOperadorApp,
+  getUsuarioCabecera,
+  iniciarSesionUsuario,
+} from "./supabase/auth";
+import { getSupabase, isSupabaseConfigured } from "./supabase/client";
 import { cargarNombreClubDesdeSupabase } from "./supabase/repository";
 import {
   agregarJugador,
@@ -56,6 +65,64 @@ const POS_LABEL: Record<Posicion, string> = {
   volante: "Volante",
   delantero: "Delantero",
 };
+
+type TabPrincipal =
+  | "jugadores"
+  | "abonos"
+  | "partidos"
+  | "equipos"
+  | "informe"
+  | "informe-partidos"
+  | "respaldo";
+
+const TODAS_LAS_TABS: TabPrincipal[] = [
+  "jugadores",
+  "abonos",
+  "partidos",
+  "equipos",
+  "informe",
+  "informe-partidos",
+  "respaldo",
+];
+
+function tabsVisibles(): TabPrincipal[] {
+  return TODAS_LAS_TABS;
+}
+
+/** Admin: siempre. Operador: solo en Partidos y Equipos. Lector: nunca. Sin Supabase: sí (modo local). */
+function puedeEscribirEnPestanaActual(): boolean {
+  if (!isSupabaseConfigured()) return true;
+  if (esLectorApp()) return false;
+  if (esAdminApp()) return true;
+  if (esOperadorApp()) return tab === "partidos" || tab === "equipos";
+  return false;
+}
+
+/** Sorteo de equipos: lector y modo local pueden; admin/operador en pestaña Equipos también. */
+function puedeInteractuarSorteoEquipos(): boolean {
+  if (!isSupabaseConfigured()) return true;
+  if (esLectorApp()) return true;
+  return puedeEscribirEnPestanaActual();
+}
+
+function asegurarTabPermitida(): void {
+  const v = tabsVisibles();
+  if (!v.includes(tab as TabPrincipal)) {
+    tab = v[0] ?? "jugadores";
+  }
+}
+
+function soloLectura(): boolean {
+  return isSupabaseConfigured() && esLectorApp();
+}
+
+function puedeBorrarPartido(): boolean {
+  return !isSupabaseConfigured() || esAdminApp();
+}
+
+function puedeEditarRespaldoCompleto(): boolean {
+  return !isSupabaseConfigured() || esAdminApp();
+}
 
 /** Cuenta ficticia (abonos/ajustes): no se lista en Partidos ni Equipos. */
 const NOMBRE_JUGADOR_SOLO_CONTABILIDAD = "Z-Otros Ingresos/Egresos";
@@ -145,14 +212,7 @@ let estado: EstadoApp = {
   partidos: [],
   reglasEquiposSeparacion: [],
 };
-let tab:
-  | "jugadores"
-  | "abonos"
-  | "partidos"
-  | "equipos"
-  | "informe"
-  | "informe-partidos"
-  | "respaldo" = "jugadores";
+let tab: TabPrincipal = "jugadores";
 let mensaje: { type: "ok" | "error"; text: string } | null = null;
 /** Con Supabase: nombre de `clubs.nombre` para mostrar sobre el título. */
 let nombreClubCabecera: string | null = null;
@@ -418,6 +478,7 @@ function errDetalle(e: unknown): string {
 }
 
 function persist(): void {
+  if (!puedeEscribirEnPestanaActual()) return;
   void guardar(estado).catch((e) => {
     setMsg(
       "error",
@@ -524,6 +585,7 @@ function renderModalAgregarJugadoresPartido(): string {
   if (!agregarJugadoresPartidoId) return "";
   const p = estado.partidos.find((x) => x.id === agregarJugadoresPartidoId);
   if (!p || p.jugadorIds.length > 0) return "";
+  const disM = !puedeEscribirEnPestanaActual() ? " disabled" : "";
   const opts = jugadoresPartidosYEquipos(estado.jugadores)
     .slice()
     .sort((a, b) => a.nombre.localeCompare(b.nombre, "es"))
@@ -532,8 +594,8 @@ function renderModalAgregarJugadoresPartido(): string {
       const selR = defColor === "rojo" ? " selected" : "";
       const selA = defColor === "azul" ? " selected" : "";
       return `<div class="partido-jugador-fila partido-jugador-fila--modal">
-        <label class="partido-jugador-check"><input type="checkbox" name="pj-add" value="${escapeHtml(j.id)}" /> ${escapeHtml(j.nombre)} <span class="${saldoClass(j.saldo)}">(${fmtMoney(j.saldo)})</span></label>
-        <select data-pj-add-color-id="${escapeHtml(j.id)}" name="pj-add-color" class="partido-pj-camiseta" aria-label="Camiseta de ${escapeHtml(j.nombre)}">
+        <label class="partido-jugador-check"><input type="checkbox" name="pj-add" value="${escapeHtml(j.id)}"${disM} /> ${escapeHtml(j.nombre)} <span class="${saldoClass(j.saldo)}">(${fmtMoney(j.saldo)})</span></label>
+        <select data-pj-add-color-id="${escapeHtml(j.id)}" name="pj-add-color" class="partido-pj-camiseta" aria-label="Camiseta de ${escapeHtml(j.nombre)}"${disM}>
           <option value="rojo"${selR}>Rojo</option>
           <option value="azul"${selA}>Azul</option>
         </select>
@@ -556,7 +618,7 @@ function renderModalAgregarJugadoresPartido(): string {
             p.montoPorJugador <= 0
               ? `<div class="form-row" style="margin-bottom:0.65rem">
             <label>Monto por jugador ($) <span class="label-hint">(requerido)</span>
-              <input type="number" name="monto-add-jp" id="monto-add-jp" step="1" min="1" required placeholder="Ej. 4000" />
+              <input type="number" name="monto-add-jp" id="monto-add-jp" step="1" min="1" required placeholder="Ej. 4000"${disM} />
             </label>
           </div>`
               : ""
@@ -565,7 +627,7 @@ function renderModalAgregarJugadoresPartido(): string {
           <div class="jugador-checks jugador-checks--modal">${opts || "<span style='color:var(--muted)'>No hay jugadores en la lista. Agregalos en la pestaña Jugadores.</span>"}</div>
           <div class="form-row" style="margin-top:0.65rem">
             <label>Resultado del encuentro <span class="label-hint">(opcional)</span>
-              <select name="resultado-encuentro-add-jp" id="resultado-encuentro-add-jp">
+              <select name="resultado-encuentro-add-jp" id="resultado-encuentro-add-jp"${disM}>
                 <option value="">Sin registrar</option>
                 <option value="empate">Empate</option>
                 <option value="rojo">Ganó camiseta roja</option>
@@ -575,7 +637,7 @@ function renderModalAgregarJugadoresPartido(): string {
           </div>
           <div class="modal-actions" style="margin-top:0.85rem">
             <button type="button" class="secondary" id="btn-agregar-jp-cancelar">Cancelar</button>
-            <button type="submit" class="primary" ${jugadoresPartidosYEquipos(estado.jugadores).length ? "" : "disabled"}>Agregar y descontar</button>
+            <button type="submit" class="primary" ${jugadoresPartidosYEquipos(estado.jugadores).length && puedeEscribirEnPestanaActual() ? "" : "disabled"}>Agregar y descontar</button>
           </div>
         </form>
       </div>
@@ -583,6 +645,7 @@ function renderModalAgregarJugadoresPartido(): string {
 }
 
 function render(): void {
+  asegurarTabPermitida();
   if (tab === "partidos") {
     const formPrevio = document.querySelector<HTMLFormElement>("#app #form-partido");
     if (formPrevio) {
@@ -620,6 +683,11 @@ function render(): void {
         <div class="app-header-titulos">
           ${nombreClubCabecera ? `<p class="club-nombre-cabecera">${escapeHtml(nombreClubCabecera)}</p>` : ""}
           <h1>Administración de canchas</h1>
+          ${
+            isSupabaseConfigured()
+              ? `<div class="app-header-userrow"><span class="app-header-user">${escapeHtml(getUsuarioCabecera())}</span><button type="button" class="secondary app-header-logout" id="btn-cerrar-sesion">Cerrar sesión</button></div>`
+              : ""
+          }
         </div>
       </div>
       <p>${
@@ -632,7 +700,7 @@ function render(): void {
       </div>
     </header>
     <nav class="tabs" role="tablist">
-      ${["jugadores", "abonos", "partidos", "equipos", "informe", "informe-partidos", "respaldo"]
+      ${tabsVisibles()
         .map(
           (t) =>
             `<button type="button" role="tab" data-tab="${t}" class="${tab === t ? "active" : ""}">${labelTab(t)}</button>`
@@ -649,7 +717,7 @@ function render(): void {
   app.querySelectorAll("nav.tabs[role='tablist'] button[data-tab]").forEach((btn) => {
     btn.addEventListener("click", () => {
       const tabAnterior = tab;
-      tab = (btn as HTMLButtonElement).dataset.tab as typeof tab;
+      tab = (btn as HTMLButtonElement).dataset.tab as TabPrincipal;
       if (tabAnterior === "partidos" && tab !== "partidos") {
         partidoGalletasBorrador = [];
         partidoFormBorrador = null;
@@ -691,6 +759,11 @@ function render(): void {
   });
 
   bindPanelEvents(app);
+
+  app.querySelector("#btn-cerrar-sesion")?.addEventListener("click", async () => {
+    await cerrarSesion();
+    renderPantallaLogin();
+  });
 
   if (tab === "equipos" && !equiposSorteoWarmupListo) {
     queueMicrotask(() => {
@@ -893,7 +966,7 @@ function panelContent(): string {
 
 function panelRespaldo(): string {
   const pendienteHtml =
-    respaldoPendiente !== null
+    respaldoPendiente !== null && puedeEditarRespaldoCompleto()
       ? `
     <div class="panel panel-respaldo-preview">
       <h3>Archivo listo: ${escapeHtml(respaldoPendiente.nombre)}</h3>
@@ -910,7 +983,13 @@ function panelRespaldo(): string {
         <button type="button" class="secondary" id="btn-cancelar-respaldo">Cancelar</button>
       </div>
     </div>`
-      : "";
+      : respaldoPendiente !== null && !puedeEditarRespaldoCompleto()
+        ? `
+    <div class="panel panel-respaldo-preview">
+      <p class="msg">Tu rol no permite importar un respaldo completo.</p>
+      <button type="button" class="secondary" id="btn-cancelar-respaldo">Cerrar aviso</button>
+    </div>`
+        : "";
 
   const previaUrl = temaDesdeUrl() !== null;
   const activo = temaEfectivo() === "futbol" ? "Cancha (verde)" : "Clásico (azul oscuro)";
@@ -954,13 +1033,17 @@ function panelRespaldo(): string {
       <div class="form-row" style="align-items:center;margin-bottom:0.75rem">
         <button type="button" class="primary" id="btn-descargar-respaldo">Descargar respaldo</button>
       </div>
-      <div class="form-row" style="align-items:center;flex-wrap:wrap;gap:0.5rem">
+      ${
+        puedeEditarRespaldoCompleto()
+          ? `<div class="form-row" style="align-items:center;flex-wrap:wrap;gap:0.5rem">
         <input type="file" id="input-importar-respaldo" accept=".json,application/json" style="max-width:100%" />
-      </div>
+      </div>`
+          : `<p style="margin:0 0 0.75rem;font-size:0.88rem;color:var(--muted)">Importar un archivo y reemplazar todo el estado solo está disponible para el rol <strong>administrador</strong>.</p>`
+      }
       <p style="margin:0.5rem 0 0;font-size:0.8rem;color:var(--muted)">Estado actual en memoria: ${estado.jugadores.length} jugadores, ${estado.abonos.length} movimientos, ${estado.partidos.length} partidos.</p>
     </div>
     ${
-      isSupabaseConfigured()
+      isSupabaseConfigured() && puedeEditarRespaldoCompleto()
         ? `
     <div class="panel">
       <h2>Actualizar Supabase</h2>
@@ -1148,11 +1231,11 @@ function panelInforme(): string {
   const totalAbonos = estado.jugadores.reduce((s, j) => s + sumaAbonosJugador(estado, j.id), 0);
   const totalArriendosCancha = estado.partidos.reduce((s, p) => s + p.valorArriendo, 0);
   const abonosMenosArriendos = totalAbonos - totalArriendosCancha;
-  const chipNetoClass =
+  const resumenNetoClass =
     abonosMenosArriendos < 0
-      ? " informe-matriz-chip-neto-neg"
+      ? " informe-resumen-linea--neg"
       : abonosMenosArriendos > 0
-        ? " informe-matriz-chip-neto-pos"
+        ? " informe-resumen-linea--pos"
         : "";
 
   return `
@@ -1199,31 +1282,31 @@ function panelInforme(): string {
           </tfoot>
         </table>
       </div>
-      <div class="informe-matriz-resumen-fin">
-        <div class="informe-matriz-resumen-izq">
-          <span class="informe-matriz-chip informe-matriz-chip-abonos"><strong>Total abonos</strong> (Σ columna Abonos): ${escapeHtml(fmtMoney(totalAbonos))}</span>
-          <span class="informe-matriz-chip informe-matriz-chip-arriendo-total"><strong>Total arriendos cancha</strong> (Σ partidos): ${escapeHtml(fmtMoney(totalArriendosCancha))}</span>
-          <span class="informe-matriz-chip informe-matriz-chip-neto-abonos${chipNetoClass}"><strong>Abonos − arriendos</strong>: ${escapeHtml(fmtMoney(abonosMenosArriendos))}</span>
-        </div>
-        <span class="informe-matriz-chip informe-matriz-chip-deuda informe-matriz-resumen-adeudado"><strong>Adeudado</strong> (Σ |saldo| si saldo &lt; 0): ${escapeHtml(fmtMoney(sumaAdeudado))}</span>
+      <div class="informe-resumen-totales" aria-label="Totales del informe">
+        <div class="informe-resumen-linea"><strong>Total abonos</strong> ${escapeHtml(fmtMoney(totalAbonos))}</div>
+        <div class="informe-resumen-linea"><strong>Total arriendos</strong> ${escapeHtml(fmtMoney(totalArriendosCancha))}</div>
+        <div class="informe-resumen-linea${resumenNetoClass}"><strong>Abonos − arriendos</strong> ${escapeHtml(fmtMoney(abonosMenosArriendos))}</div>
+        <div class="informe-resumen-linea informe-resumen-linea--deuda"><strong>Adeudado</strong> ${escapeHtml(fmtMoney(sumaAdeudado))}</div>
       </div>
     </div>`;
 }
 
 function panelJugadores(): string {
+  const dis = !puedeEscribirEnPestanaActual() ? " disabled" : "";
   const filas = ordenarJugadoresParaLista(estado.jugadores)
     .map((j) => {
       const pos = j.posiciones.map((p) => POS_LABEL[p]).join(", ");
+      const acciones = puedeEscribirEnPestanaActual()
+        ? `<button type="button" class="secondary" data-edit="${j.id}">Editar</button>
+            <button type="button" class="secondary danger" data-del="${j.id}">Eliminar</button>`
+        : `<span class="jugadores-acciones-vacio" aria-hidden="true">–</span>`;
       return `
         <tr>
           <td>${escapeHtml(j.nombre)}</td>
           <td>${escapeHtml(pos)}</td>
           <td title="Destreza 1–10">${j.destreza}</td>
           <td class="${saldoClass(j.saldo)}">${fmtMoney(j.saldo)}</td>
-          <td class="inline-actions">
-            <button type="button" class="secondary" data-edit="${j.id}">Editar</button>
-            <button type="button" class="secondary danger" data-del="${j.id}">Eliminar</button>
-          </td>
+          <td class="inline-actions inline-actions--jugadores">${acciones}</td>
         </tr>`;
     })
     .join("");
@@ -1254,7 +1337,7 @@ function panelJugadores(): string {
                 </label>
               </div>
               <div class="pos-checks">${checks}</div>
-              <button type="submit" class="primary">Guardar</button>
+              <button type="submit" class="primary"${dis}>Guardar</button>
               <button type="button" class="secondary" id="cancel-edit">Cancelar</button>
             </form>
           </div>`;
@@ -1264,13 +1347,22 @@ function panelJugadores(): string {
   return `
     <div class="panel">
       <h2>Nuevo jugador</h2>
+      ${
+        isSupabaseConfigured() && !puedeEscribirEnPestanaActual()
+          ? `<p class="msg" style="margin:0 0 0.75rem">${
+              esLectorApp()
+                ? "Solo consulta: no podés modificar jugadores."
+                : "Como operador solo podés editar en las pestañas Partidos y Equipos; acá es solo lectura."
+            }</p>`
+          : ""
+      }
       <form id="form-nuevo-jugador">
         <div class="form-row">
           <label>Nombre
-            <input type="text" name="nombre" required placeholder="Ej. Juan Pérez" />
+            <input type="text" name="nombre" required placeholder="Ej. Juan Pérez"${dis} />
           </label>
           <label>Destreza (1–10)
-            <input type="number" name="destreza" min="1" max="10" step="1" value="5" required />
+            <input type="number" name="destreza" min="1" max="10" step="1" value="5" required${dis} />
           </label>
         </div>
         <p style="margin:0 0 0.5rem;font-size:0.85rem;color:var(--muted)">El saldo queda en cero hasta que registres <strong>abonos</strong> en la pestaña Abonos (o ajustes al editar el jugador).</p>
@@ -1278,10 +1370,10 @@ function panelJugadores(): string {
         <div class="pos-checks">
           ${POSICIONES.map(
             (p) =>
-              `<label><input type="checkbox" name="pos" value="${p}" ${p === "volante" ? "checked" : ""} /> ${POS_LABEL[p]}</label>`
+              `<label><input type="checkbox" name="pos" value="${p}" ${p === "volante" ? "checked" : ""}${dis} /> ${POS_LABEL[p]}</label>`
           ).join("")}
         </div>
-        <button type="submit" class="primary">Agregar jugador</button>
+        <button type="submit" class="primary"${dis}>Agregar jugador</button>
       </form>
     </div>
     ${editForm}
@@ -1300,8 +1392,8 @@ function panelJugadores(): string {
       ${
         estado.jugadores.length === 0
           ? "<p style='color:var(--muted)'>No hay jugadores aún.</p>"
-          : `<table>
-        <thead><tr><th>Nombre</th><th>Posiciones</th><th>Destreza</th><th>Saldo</th><th></th></tr></thead>
+          : `<table class="jugadores-tabla">
+        <thead><tr><th>Nombre</th><th>Posiciones</th><th>Destreza</th><th>Saldo</th><th class="jugadores-th-acciones"></th></tr></thead>
         <tbody>${filas}</tbody>
       </table>`
       }
@@ -1410,34 +1502,45 @@ function panelAbonos(): string {
     const nota = m.nota ? ` — ${m.nota}` : "";
     const anulado = m.anulado === true;
     const sufijo = anulado ? " (anulado)" : "";
-    const botones = j
-      ? anulado
-        ? `<button type="button" class="secondary historial-abono-restaurar" data-restaurar-abono="${escapeHtml(m.id)}">Restaurar en saldo</button>`
-        : `<button type="button" class="secondary danger historial-abono-anular" data-anular-abono="${escapeHtml(m.id)}">Anular (revertir saldo)</button>`
-      : "";
+    const botones =
+      puedeEscribirEnPestanaActual() && j
+        ? anulado
+          ? `<button type="button" class="secondary historial-abono-restaurar" data-restaurar-abono="${escapeHtml(m.id)}">Restaurar en saldo</button>`
+          : `<button type="button" class="secondary danger historial-abono-anular" data-anular-abono="${escapeHtml(m.id)}">Anular (revertir saldo)</button>`
+        : "";
     const liClass = anulado ? "historial-abono-fila historial-abono-fila--anulado" : "historial-abono-fila";
     return `<li class="${liClass}"><span class="historial-abono-texto">${fmtFecha(m.fecha)} · ${escapeHtml(nombre)}: ${fmtMoney(m.monto)}${escapeHtml(nota)}${escapeHtml(sufijo)}</span><span class="historial-abono-acciones">${botones}</span></li>`;
   });
 
+  const disAb = !puedeEscribirEnPestanaActual() ? " disabled" : "";
   return `
     <div class="panel">
       <h2>Abono o ajuste de saldo</h2>
+      ${
+        isSupabaseConfigured() && !puedeEscribirEnPestanaActual()
+          ? `<p class="msg" style="margin:0 0 0.65rem">${
+              esLectorApp()
+                ? "Solo consulta: no podés registrar ni anular movimientos."
+                : "Como operador solo podés editar en Partidos y Equipos; acá es solo lectura."
+            }</p>`
+          : ""
+      }
       <p style="margin:0 0 0.65rem;font-size:0.85rem;color:var(--muted)">Monto positivo suma al saldo; monto negativo lo resta. No uses cero.</p>
       <p style="margin:0 0 0.65rem;font-size:0.85rem;color:var(--muted)">En el historial podés <strong>anular</strong> un movimiento (revierte el efecto en el saldo) o <strong>restaurarlo</strong> si lo anulaste por error.</p>
       <form id="form-abono">
         <div class="form-row">
           <label>Jugador
-            <select name="jugadorId" required>${opts || "<option value=''>Sin jugadores</option>"}</select>
+            <select name="jugadorId" required${disAb}>${opts || "<option value=''>Sin jugadores</option>"}</select>
           </label>
           <label>Monto ($)
-            <input type="number" name="monto" step="1" required placeholder="Ej. 20000 o -5000" />
+            <input type="number" name="monto" step="1" required placeholder="Ej. 20000 o -5000"${disAb} />
           </label>
         </div>
         <label>Nota (opcional)
-          <input type="text" name="nota" placeholder="Ej. Transferencia abril" />
+          <input type="text" name="nota" placeholder="Ej. Transferencia abril"${disAb} />
         </label>
         <div style="margin-top:0.75rem">
-          <button type="submit" class="primary" ${estado.jugadores.length ? "" : "disabled"}>Registrar movimiento</button>
+          <button type="submit" class="primary" ${estado.jugadores.length && puedeEscribirEnPestanaActual() ? "" : "disabled"}>Registrar movimiento</button>
         </div>
       </form>
     </div>
@@ -1449,6 +1552,7 @@ function panelAbonos(): string {
 }
 
 function panelPartidos(): string {
+  const disP = !puedeEscribirEnPestanaActual() ? " disabled" : "";
   const listaOrd = jugadoresPartidosYEquipos(estado.jugadores)
     .slice()
     .sort((a, b) => a.nombre.localeCompare(b.nombre, "es"));
@@ -1473,9 +1577,9 @@ function panelPartidos(): string {
       const selA = defColor === "azul" ? " selected" : "";
       const chk = pjMarcados.has(j.id) ? " checked" : "";
       return `<div class="partido-jugador-fila">
-        <label class="partido-jugador-check"><input type="checkbox" name="pj" value="${escapeHtml(j.id)}"${chk} />
+        <label class="partido-jugador-check"><input type="checkbox" name="pj" value="${escapeHtml(j.id)}"${chk}${disP} />
         ${escapeHtml(j.nombre)} <span class="${saldoClass(j.saldo)}">(${fmtMoney(j.saldo)})</span></label>
-        <select data-pj-color-id="${escapeHtml(j.id)}" name="pj-color" class="partido-pj-camiseta" aria-label="Camiseta de ${escapeHtml(j.nombre)}">
+        <select data-pj-color-id="${escapeHtml(j.id)}" name="pj-color" class="partido-pj-camiseta" aria-label="Camiseta de ${escapeHtml(j.nombre)}"${disP}>
           <option value="rojo"${selR}>Rojo</option>
           <option value="azul"${selA}>Azul</option>
         </select>
@@ -1506,13 +1610,13 @@ function panelPartidos(): string {
         <div class="galleta-fila-partido" data-galleta-id="${escapeHtml(b.id)}">
           <label class="galleta-fila-partido-check"><input type="checkbox" class="galleta-incluir" ${
             b.incluida ? "checked" : ""
-          } /> Jugó</label>
-          <input type="text" class="galleta-nombre" name="galleta-nombre-${escapeHtml(b.id)}" placeholder="Nombre galleta" value="${escapeHtml(b.nombre)}" autocomplete="off" />
-          <input type="number" class="galleta-monto" name="galleta-monto-${escapeHtml(b.id)}" min="1" step="1" placeholder="Monto" value="${escapeHtml(b.monto)}" />
+          }${disP} /> Jugó</label>
+          <input type="text" class="galleta-nombre" name="galleta-nombre-${escapeHtml(b.id)}" placeholder="Nombre galleta" value="${escapeHtml(b.nombre)}" autocomplete="off"${disP} />
+          <input type="number" class="galleta-monto" name="galleta-monto-${escapeHtml(b.id)}" min="1" step="1" placeholder="Monto" value="${escapeHtml(b.monto)}"${disP} />
           <label class="galleta-fila-partido-paga">Carga a
-            <select class="galleta-paga" name="galleta-paga-${escapeHtml(b.id)}">${optsPagaSelect(b.cargoAJugadorId)}</select>
+            <select class="galleta-paga" name="galleta-paga-${escapeHtml(b.id)}"${disP}>${optsPagaSelect(b.cargoAJugadorId)}</select>
           </label>
-          <button type="button" class="secondary galleta-quitar-partido" data-galleta-quitar="${escapeHtml(b.id)}">Quitar</button>
+          <button type="button" class="secondary galleta-quitar-partido" data-galleta-quitar="${escapeHtml(b.id)}"${disP}>Quitar</button>
         </div>`
           )
           .join("");
@@ -1547,20 +1651,28 @@ function panelPartidos(): string {
               : "—"
           );
     const btnAgregar =
-      p.jugadorIds.length === 0
+      p.jugadorIds.length === 0 && puedeEscribirEnPestanaActual()
         ? `<button type="button" class="secondary historial-partido-agregar" data-agregar-jugadores-partido="${escapeHtml(p.id)}">Agregar jugadores</button>`
         : "";
+    const btnEliminar = puedeBorrarPartido()
+      ? `<button type="button" class="secondary danger historial-partido-eliminar" data-eliminar-partido="${escapeHtml(p.id)}">Eliminar</button>`
+      : "";
     const txtMonto =
       p.montoPorJugador > 0 ? `${fmtMoney(p.montoPorJugador)} c/u` : "monto pendiente (al agregar jugadores)";
     return `<li class="historial-partido-fila">
       <span class="historial-partido-txt">${fmtFecha(p.fecha)} · ${escapeHtml(fmtCanchaPartido(p.cancha))} · ${txtMonto} · arriendo ${fmtMoney(p.valorArriendo)} · ${nombresHtml}</span>
-      <span class="historial-partido-acciones">${btnAgregar}<button type="button" class="secondary danger historial-partido-eliminar" data-eliminar-partido="${escapeHtml(p.id)}">Eliminar</button></span>
+      <span class="historial-partido-acciones">${btnAgregar}${btnEliminar}</span>
     </li>`;
   });
 
   return `
     <div class="panel">
       <h2>Registrar partido jugado</h2>
+        ${
+          soloLectura()
+            ? `<p class="msg" style="margin:0 0 0.75rem">Solo consulta: no podés registrar ni modificar partidos.</p>`
+            : ""
+        }
         <p style="margin:0 0 0.75rem;font-size:0.88rem;color:var(--muted)">
         Podés registrar solo <strong>fecha, hora, cancha, arriendo</strong> sin marcar jugadores (cancha ya pagada; después usá <strong>Agregar jugadores</strong> en el historial).
         El <strong>monto por jugador</strong> es opcional hasta que marques jugadores de la lista; al marcarlos, tenés que indicarlo.
@@ -1573,7 +1685,7 @@ function panelPartidos(): string {
       <form id="form-partido" lang="es">
         <div class="form-row form-row--partido-fecha">
           <label>Fecha
-            <input type="date" name="fecha-d" value="${escapeHtml(fechaPartidoInput)}" required />
+            <input type="date" name="fecha-d" value="${escapeHtml(fechaPartidoInput)}" required${disP} />
           </label>
           <label>Hora <span class="label-hint">(24 h, por defecto 21:00)</span>
             <input
@@ -1586,13 +1698,13 @@ function panelPartidos(): string {
               placeholder="21:00"
               inputmode="numeric"
               autocomplete="off"
-              spellcheck="false"
+              spellcheck="false"${disP}
             />
           </label>
         </div>
         <div class="form-row">
           <label>Cancha
-            <select name="cancha" required>
+            <select name="cancha" required${disP}>
               <option value="1"${canchaSeleccionada === "1" ? " selected" : ""}>Cancha 1</option>
               <option value="2"${canchaSeleccionada === "2" ? " selected" : ""}>Cancha 2</option>
               <option value="desafio-vs"${canchaSeleccionada === "desafio-vs" ? " selected" : ""}>Desafio VS</option>
@@ -1600,10 +1712,10 @@ function panelPartidos(): string {
             </select>
           </label>
           <label>Monto por jugador ($) <span class="label-hint" id="partidos-monto-hint">(opcional sin jugadores)</span>
-            <input type="number" name="montoPartido" id="partidos-monto-por-jugador" step="1" min="0" placeholder="Ej. 4000" value="${escapeHtml(montoPartidoValor)}" />
+            <input type="number" name="montoPartido" id="partidos-monto-por-jugador" step="1" min="0" placeholder="Ej. 4000" value="${escapeHtml(montoPartidoValor)}"${disP} />
           </label>
           <label>Arriendo cancha ($)
-            <input type="number" name="valorArriendo" step="1" min="0" required placeholder="Ej. 80000" value="${escapeHtml(valorArriendoInput)}" />
+            <input type="number" name="valorArriendo" step="1" min="0" required placeholder="Ej. 80000" value="${escapeHtml(valorArriendoInput)}"${disP} />
           </label>
           <label>Total descuentos (marcados) ($)
             <input type="text" readonly class="partido-calculo" id="partidos-total-descuentos" tabindex="-1" aria-live="polite" value="${fmtMoney(0)}" />
@@ -1612,7 +1724,7 @@ function panelPartidos(): string {
             <input type="text" readonly class="partido-calculo" id="partidos-diff-arriendo" tabindex="-1" aria-live="polite" value="${fmtMoney(0)}" />
           </label>
           <label>Resultado del encuentro <span class="label-hint">(opcional; sirve sin jugadores en lista)</span>
-            <select name="resultadoEncuentro">
+            <select name="resultadoEncuentro"${disP}>
               <option value=""${marcaRes("")}>Sin registrar</option>
               <option value="empate"${marcaRes("empate")}>Empate</option>
               <option value="rojo"${marcaRes("rojo")}>Ganó camiseta roja</option>
@@ -1629,10 +1741,10 @@ function panelPartidos(): string {
             : `<div class="galletas-partido-bloque">
           <p style="margin:0.65rem 0 0.35rem;font-size:0.85rem;color:var(--muted)">Galletas (opcional)</p>
           <div id="galletas-partido-list" class="galletas-partido-list">${filasGalletasHtml}</div>
-          <button type="button" class="secondary" id="btn-agregar-galleta-partido">+ Agregar galleta</button>
+          <button type="button" class="secondary" id="btn-agregar-galleta-partido"${disP}>+ Agregar galleta</button>
         </div>`
         }
-        <button type="submit" class="primary">Registrar partido</button>
+        <button type="submit" class="primary"${disP}>Registrar partido</button>
       </form>
     </div>
     <div class="panel">
@@ -1664,6 +1776,8 @@ function normalizarHora24(texto: string): string | null {
 }
 
 function panelEquipos(): string {
+  const disSorteo = !puedeInteractuarSorteoEquipos() ? " disabled" : "";
+  const disReglas = !puedeEscribirEnPestanaActual() ? " disabled" : "";
   const totalNecesarios = encuentroPorEquipo * 2;
   const jugEq = jugadoresPartidosYEquipos(estado.jugadores);
   const opts = jugEq
@@ -1672,7 +1786,7 @@ function panelEquipos(): string {
     .map((j) => {
       const pos = j.posiciones.map((p) => POS_LABEL[p]).join(", ");
       const checked = equiposSeleccionCache.includes(j.id) ? " checked" : "";
-      return `<label><input type="checkbox" name="eq" value="${j.id}"${checked} /> ${escapeHtml(j.nombre)} <span style="color:var(--muted);font-size:0.82rem">(${escapeHtml(pos)} · dest. ${j.destreza})</span></label>`;
+      return `<label><input type="checkbox" name="eq" value="${j.id}"${checked}${disSorteo} /> ${escapeHtml(j.nombre)} <span style="color:var(--muted);font-size:0.82rem">(${escapeHtml(pos)} · dest. ${j.destreza})</span></label>`;
     })
     .join("");
 
@@ -1705,10 +1819,14 @@ function panelEquipos(): string {
             const nb =
               estado.jugadores.find((j) => j.id === r.jugadorIdB)?.nombre ?? "(jugador borrado)";
             return `<li><span class="equipos-reglas-par">${escapeHtml(na)}</span> y <span class="equipos-reglas-par">${escapeHtml(nb)}</span> — distintos equipos
-            <button type="button" class="secondary equipos-reglas-quitar" data-quitar-regla="${escapeHtml(r.id)}">Quitar</button></li>`;
+            <button type="button" class="secondary equipos-reglas-quitar" data-quitar-regla="${escapeHtml(r.id)}"${disReglas}>Quitar</button></li>`;
           })
           .join("");
 
+  const textoReglasEnResultado =
+    esLectorApp() && isSupabaseConfigured()
+      ? ""
+      : ` Las <strong>reglas especiales</strong> (pares que no pueden ir juntos) se respetan en ambas opciones.`;
   const equiposHtml =
     ultimoEquipos !== null
       ? `
@@ -1716,23 +1834,19 @@ function panelEquipos(): string {
       <h2>Resultado (${encuentroPorEquipo} vs ${encuentroPorEquipo})</h2>
       <p style="margin:0 0 0.75rem;font-size:0.88rem;color:var(--muted)">
         Se muestran <strong>dos opciones</strong> de reparto (mismos criterios en ambas). Equipo A y B llevan camiseta <strong>roja o azul</strong> al azar en cada opción.
-        El sorteo es <strong>aleatorio</strong> entre repartos válidos; se busca equilibrar <strong>defensas</strong> y <strong>volantes</strong> entre equipos (como máximo una de diferencia en cada rol). En <strong>arquero</strong> y <strong>delantero</strong> puede haber más disparidad entre equipos.
-        Las <strong>reglas especiales</strong> (pares que no pueden ir juntos) se respetan en ambas opciones.
+        El sorteo es <strong>aleatorio</strong> entre repartos válidos; se busca equilibrar <strong>defensas</strong> y <strong>volantes</strong> entre equipos (como máximo una de diferencia en cada rol). En <strong>arquero</strong> y <strong>delantero</strong> puede haber más disparidad entre equipos.${textoReglasEnResultado}
       </p>
       ${htmlBloqueOpcionEquipos(1, ultimoEquipos.opcion1, ultimoEquipos.camisetaAOp1)}
       <div class="equipos-opcion-separador" role="presentation" aria-hidden="true"></div>
       ${htmlBloqueOpcionEquipos(2, ultimoEquipos.opcion2, ultimoEquipos.camisetaAOp2)}
-      <button type="button" class="secondary" id="btn-otra-vez" style="margin-top:0.75rem">Volver a sortear con la misma selección</button>
+      <button type="button" class="secondary" id="btn-otra-vez" style="margin-top:0.75rem"${disSorteo}>Volver a sortear con la misma selección</button>
     </div>`
       : "";
 
-  return `
-    <div class="panel">
-      <h2>Armar equipos</h2>
-      <p style="margin:0 0 0.75rem;font-size:0.88rem;color:var(--muted)">
-        La repartición de jugadores entre A y B es <strong>al azar</strong>, respetando solo las <strong>reglas especiales</strong> (abajo). Se intenta equilibrar cuántos van con rol de <strong>defensa</strong> y <strong>volante</strong> en cada equipo; en <strong>arquero</strong> y <strong>delantero</strong> no se fuerza el mismo reparto entre equipos. Si <strong>nadie</strong> declaró arquero entre los elegidos, cualquiera puede ir al arco.
-        Las dos opciones que ves son dos sorteos distintos con el mismo criterio; la segunda suele tener mejor equilibrio de suma de destrezas.
-      </p>
+  const bloqueReglas =
+    esLectorApp() && isSupabaseConfigured()
+      ? ""
+      : `
       <details class="equipos-reglas-glosa">
         <summary class="equipos-reglas-summary">Reglas especiales (no juntar en el mismo equipo)</summary>
         <div class="equipos-reglas-body">
@@ -1741,26 +1855,44 @@ function panelEquipos(): string {
           <form id="form-reglas-equipos" class="equipos-reglas-form">
             <div class="form-row equipos-reglas-fila">
               <label>Jugador 1
-                <select name="regla-jugador-a" required>${optsJugadoresReglas || "<option value=\"\">—</option>"}</select>
+                <select name="regla-jugador-a" required${disReglas}>${optsJugadoresReglas || "<option value=\"\">—</option>"}</select>
               </label>
               <label>Jugador 2
-                <select name="regla-jugador-b" required>${optsJugadoresReglas || "<option value=\"\">—</option>"}</select>
+                <select name="regla-jugador-b" required${disReglas}>${optsJugadoresReglas || "<option value=\"\">—</option>"}</select>
               </label>
-              <button type="submit" class="secondary" ${jugEq.length >= 2 ? "" : "disabled"}>Agregar regla</button>
+              <button type="submit" class="secondary" ${jugEq.length >= 2 && puedeEscribirEnPestanaActual() ? "" : "disabled"}>Agregar regla</button>
             </div>
           </form>
         </div>
-      </details>
+      </details>`;
+
+  return `
+    <div class="panel">
+      <h2>Armar equipos</h2>
+      ${
+        soloLectura()
+          ? `<p class="msg" style="margin:0 0 0.75rem">Podés elegir jugadores y sortear equipos aquí; el resultado no se guarda en el servidor.</p>`
+          : ""
+      }
+      <p style="margin:0 0 0.75rem;font-size:0.88rem;color:var(--muted)">
+        ${
+          esLectorApp() && isSupabaseConfigured()
+            ? `La repartición entre equipo A y B es <strong>al azar</strong>. Se intenta equilibrar cuántos van con rol de <strong>defensa</strong> y <strong>volante</strong> en cada equipo; en <strong>arquero</strong> y <strong>delantero</strong> no se fuerza el mismo reparto. Si <strong>nadie</strong> declaró arquero entre los elegidos, cualquiera puede ir al arco. Las dos opciones del resultado son dos sorteos distintos con el mismo criterio.`
+            : `La repartición de jugadores entre A y B es <strong>al azar</strong>, respetando solo las <strong>reglas especiales</strong> (abajo). Se intenta equilibrar cuántos van con rol de <strong>defensa</strong> y <strong>volante</strong> en cada equipo; en <strong>arquero</strong> y <strong>delantero</strong> no se fuerza el mismo reparto entre equipos. Si <strong>nadie</strong> declaró arquero entre los elegidos, cualquiera puede ir al arco.
+        Las dos opciones que ves son dos sorteos distintos con el mismo criterio; la segunda suele tener mejor equilibrio de suma de destrezas.`
+        }
+      </p>
+      ${bloqueReglas}
       <form id="form-equipos">
         <div class="form-row">
           <label>Tamaño del encuentro
-            <select id="sel-encuentro" name="encuentro">${selectEncuentro}</select>
+            <select id="sel-encuentro" name="encuentro"${disSorteo}>${selectEncuentro}</select>
           </label>
         </div>
         <p style="margin:0.75rem 0 0.35rem;font-size:0.85rem;color:var(--muted)">Jugadores inscritos (necesitás ${totalNecesarios}):</p>
         <p id="equipos-contador" class="equipos-seleccion-count${equiposSeleccionCache.length === totalNecesarios ? " equipos-count-ok" : equiposSeleccionCache.length > 0 ? " equipos-count-parcial" : ""}" aria-live="polite">Seleccionados: ${equiposSeleccionCache.length} de ${totalNecesarios}</p>
         <div class="jugador-checks" style="max-height:280px">${opts || "<span style='color:var(--muted)'>Agrega jugadores con sus posiciones.</span>"}</div>
-        <button type="submit" class="primary" ${jugEq.length >= 2 ? "" : "disabled"}>Sortear equipos</button>
+        <button type="submit" class="primary" ${jugEq.length >= 2 && puedeInteractuarSorteoEquipos() ? "" : "disabled"}>Sortear equipos</button>
       </form>
     </div>
     ${equiposHtml}`;
@@ -2488,7 +2620,61 @@ function bindPanelEvents(root: HTMLElement): void {
   });
 }
 
-async function bootstrap(): Promise<void> {
+function renderPantallaLogin(): void {
+  const app = document.querySelector<HTMLDivElement>("#app");
+  if (!app) return;
+  const logoSrc = escapeAttr(urlLogoCabecera());
+  app.innerHTML = `
+    <div class="auth-login-screen">
+      <div class="auth-login-inner panel">
+        <div class="auth-login-logo-wrap">
+          <img
+            src="${logoSrc}"
+            alt=""
+            class="auth-login-logo"
+            width="240"
+            height="240"
+            decoding="async"
+            onerror="this.style.display='none'"
+          />
+        </div>
+        <p class="auth-login-lead">Iniciá sesión con el usuario y la contraseña que te dio el administrador.</p>
+        <form id="form-login-auth" class="auth-login-form">
+          <label class="auth-login-field-label">Usuario
+            <input type="text" name="usuario" class="auth-login-input" autocomplete="username" required autocapitalize="off" spellcheck="false" />
+          </label>
+          <label class="auth-login-field-label">Contraseña
+            <input type="password" name="password" class="auth-login-input" autocomplete="current-password" required />
+          </label>
+          <button type="submit" class="primary auth-login-submit">Ingresar</button>
+        </form>
+        <p id="login-error" class="msg error auth-login-error" style="display:none"></p>
+      </div>
+    </div>`;
+  app.querySelector("#form-login-auth")?.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const form = e.target as HTMLFormElement;
+    const fd = new FormData(form);
+    const usuario = String(fd.get("usuario") ?? "");
+    const password = String(fd.get("password") ?? "");
+    const errEl = app.querySelector("#login-error") as HTMLElement | null;
+    if (errEl) {
+      errEl.style.display = "none";
+      errEl.textContent = "";
+    }
+    try {
+      await iniciarSesionUsuario(usuario, password);
+      await bootstrapApp();
+    } catch (ex) {
+      if (errEl) {
+        errEl.textContent = errDetalle(ex);
+        errEl.style.display = "block";
+      }
+    }
+  });
+}
+
+async function bootstrapApp(): Promise<void> {
   estado = await cargarInicial();
   const aviso = consumirAvisoCargaInicial();
   if (aviso) setMsg(aviso.type, aviso.text);
@@ -2504,5 +2690,20 @@ async function bootstrap(): Promise<void> {
   programarCalentamientoSorteoEquiposIdle();
 }
 
+async function bootstrap(): Promise<void> {
+  if (isSupabaseConfigured()) {
+    await cargarSesionYRol();
+    const sb = getSupabase();
+    const {
+      data: { session },
+    } = await sb.auth.getSession();
+    if (!session) {
+      renderPantallaLogin();
+      return;
+    }
+  }
+  await bootstrapApp();
+}
+
 inicializarTemaDesdeUrlYLocalStorage();
-bootstrap();
+void bootstrap();

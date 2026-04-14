@@ -310,3 +310,86 @@ export async function escribirEstadoClubEnSupabase(
 export async function guardarEstadoEnSupabase(estado: EstadoApp): Promise<void> {
   await escribirEstadoClubEnSupabase(getSupabase(), getClubId(), estado);
 }
+
+async function upsertChunked<T extends Record<string, unknown>>(
+  sb: SupabaseClient,
+  table: string,
+  rows: T[],
+  onConflict: string
+): Promise<void> {
+  if (rows.length === 0) return;
+  for (let i = 0; i < rows.length; i += CHUNK) {
+    const slice = rows.slice(i, i + CHUNK);
+    const { error } = await sb.from(table).upsert(slice as never, { onConflict });
+    if (error) throw new Error(`${table}: ${error.message}`);
+  }
+}
+
+/**
+ * Sincroniza sin borrar filas de `partidos` (el operador no tiene permiso DELETE en esa tabla).
+ * Actualiza jugadores, partidos, hijos y reglas según el estado en memoria.
+ */
+export async function sincronizarEstadoOperadorEnSupabase(
+  sb: SupabaseClient,
+  clubId: string,
+  estado: EstadoApp
+): Promise<void> {
+  const now = new Date().toISOString();
+  const jugIns = estado.jugadores.map((j) => ({
+    id: j.id,
+    club_id: clubId,
+    nombre: j.nombre,
+    posiciones: j.posiciones,
+    destreza: j.destreza,
+    saldo: j.saldo,
+    es_solo_contabilidad: j.soloContabilidad === true,
+    updated_at: now,
+  }));
+  await upsertChunked(sb, "jugadores", jugIns, "id");
+
+  const partIns = estado.partidos.map((p) => ({
+    id: p.id,
+    club_id: clubId,
+    cancha: canchaToDb(p.cancha),
+    fecha: p.fecha,
+    monto_por_jugador: p.montoPorJugador,
+    valor_arriendo: p.valorArriendo,
+    resultado_encuentro: p.resultadoEncuentro ?? null,
+    jugador_ids: p.jugadorIds,
+  }));
+  await upsertChunked(sb, "partidos", partIns, "id");
+
+  for (const p of estado.partidos) {
+    const { error: e1 } = await sb.from("partido_jugadores").delete().eq("partido_id", p.id);
+    if (e1) throw new Error(e1.message);
+    const { error: e2 } = await sb.from("partido_galletas").delete().eq("partido_id", p.id);
+    if (e2) throw new Error(e2.message);
+    const pjRows: { partido_id: string; jugador_id: string; color_camiseta: string }[] = [];
+    const cols = p.coloresEquipoPorJugador;
+    for (const jid of p.jugadorIds) {
+      const c = cols?.[jid];
+      if (c === "rojo" || c === "azul") {
+        pjRows.push({ partido_id: p.id, jugador_id: jid, color_camiseta: c });
+      }
+    }
+    await insertChunked(sb, "partido_jugadores", pjRows);
+    const galRows = (p.galletas ?? []).map((g) => ({
+      id: g.id,
+      partido_id: p.id,
+      nombre: g.nombre,
+      monto: g.monto,
+      cargo_jugador_id: g.cargoAJugadorId,
+    }));
+    await insertChunked(sb, "partido_galletas", galRows);
+  }
+
+  const { error: er } = await sb.from("reglas_equipos_separacion").delete().eq("club_id", clubId);
+  if (er) throw new Error(er.message);
+  const regIns = estado.reglasEquiposSeparacion.map((r) => ({
+    id: r.id,
+    club_id: clubId,
+    jugador_a_id: r.jugadorIdA,
+    jugador_b_id: r.jugadorIdB,
+  }));
+  await insertChunked(sb, "reglas_equipos_separacion", regIns);
+}

@@ -390,6 +390,13 @@ table.informe-matriz--financiero {
   --informe-left-nombre: var(--informe-w-idx);
   --informe-left-vic: calc(var(--informe-w-idx) + var(--informe-w-nombre));
   --informe-left-abonos: calc(var(--informe-left-vic) + var(--informe-w-vic));
+  /* Fondos 100 % opacos en columnas fijas: si no, al hacer scroll se ve el contenido de atrás mezclado */
+  --informe-bg-row-a: var(--surface);
+  --informe-bg-row-b: color-mix(in srgb, var(--surface) 92%, #000);
+  --informe-bg-head: var(--surface2);
+  --informe-bg-idx: var(--surface2);
+  --informe-bg-deuda-a: color-mix(in srgb, var(--surface) 78%, rgb(150 105 28));
+  --informe-bg-deuda-b: color-mix(in srgb, var(--surface) 74%, rgb(128 88 22));
 }
 
 table.informe-matriz--financiero .informe-matriz-col-idx {
@@ -459,7 +466,6 @@ table.informe-matriz--financiero .informe-matriz-sticky-vic {
   width: var(--informe-w-vic);
   max-width: var(--informe-w-vic);
   z-index: 6;
-  background: var(--surface);
 }
 
 table.informe-matriz--financiero .informe-matriz-sticky-abonos {
@@ -468,32 +474,99 @@ table.informe-matriz--financiero .informe-matriz-sticky-abonos {
   width: var(--informe-w-abonos);
   max-width: var(--informe-w-abonos);
   z-index: 7;
-  background: var(--surface);
 }
 
-table.informe-matriz--financiero tbody tr.informe-matriz-fila:nth-child(even) .informe-matriz-sticky-vic,
-table.informe-matriz--financiero tbody tr.informe-matriz-fila:nth-child(even) .informe-matriz-sticky-abonos {
-  background: rgba(0, 0, 0, 0.04);
+/* Columnas fijas del cuerpo: colores opacos (rayas y deuda) para tapar por completo lo que pasa por detrás */
+table.informe-matriz--financiero tbody tr.informe-matriz-fila:nth-child(odd):not(.informe-matriz-fila-deuda)
+  td.informe-matriz-col-idx {
+  background: var(--informe-bg-idx);
 }
 
-table.informe-matriz--financiero tbody tr.informe-matriz-fila-deuda .informe-matriz-sticky-vic,
-table.informe-matriz--financiero tbody tr.informe-matriz-fila-deuda .informe-matriz-sticky-abonos {
-  background: rgba(120, 85, 0, 0.1) !important;
+table.informe-matriz--financiero tbody tr.informe-matriz-fila:nth-child(even):not(.informe-matriz-fila-deuda)
+  td.informe-matriz-col-idx {
+  background: color-mix(in srgb, var(--informe-bg-idx) 92%, #000);
 }
 
+table.informe-matriz--financiero tbody tr.informe-matriz-fila:nth-child(odd):not(.informe-matriz-fila-deuda) .informe-matriz-nombre,
+table.informe-matriz--financiero tbody tr.informe-matriz-fila:nth-child(odd):not(.informe-matriz-fila-deuda) .informe-matriz-sticky-vic,
+table.informe-matriz--financiero tbody tr.informe-matriz-fila:nth-child(odd):not(.informe-matriz-fila-deuda) .informe-matriz-sticky-abonos {
+  background: var(--informe-bg-row-a);
+}
+
+table.informe-matriz--financiero tbody tr.informe-matriz-fila:nth-child(even):not(.informe-matriz-fila-deuda) .informe-matriz-nombre,
+table.informe-matriz--financiero tbody tr.informe-matriz-fila:nth-child(even):not(.informe-matriz-fila-deuda) .informe-matriz-sticky-vic,
+table.informe-matriz--financiero tbody tr.informe-matriz-fila:nth-child(even):not(.informe-matriz-fila-deuda) .informe-matriz-sticky-abonos {
+  background: var(--informe-bg-row-b);
+}
+
+table.informe-matriz--financiero tbody tr.informe-matriz-fila-deuda:nth-child(odd) > td.informe-matriz-col-idx,
+table.informe-matriz--financiero tbody tr.informe-matriz-fila-deuda:nth-child(odd) .informe-matriz-nombre,
+table.informe-matriz--financiero tbody tr.informe-matriz-fila-deuda:nth-child(odd) .informe-matriz-sticky-vic,
+table.informe-matriz--financiero tbody tr.informe-matriz-fila-deuda:nth-child(odd) .informe-matriz-sticky-abonos {
+  background: var(--informe-bg-deuda-a) !important;
+}
+
+table.informe-matriz--financiero tbody tr.informe-matriz-fila-deuda:nth-child(even) > td.informe-matriz-col-idx,
+table.informe-matriz--financiero tbody tr.informe-matriz-fila-deuda:nth-child(even) .informe-matriz-nombre,
 table.informe-matriz--financiero tbody tr.informe-matriz-fila-deuda:nth-child(even) .informe-matriz-sticky-vic,
 table.informe-matriz--financiero tbody tr.informe-matriz-fila-deuda:nth-child(even) .informe-matriz-sticky-abonos {
-  background: rgba(100, 70, 0, 0.12) !important;
+  background: var(--informe-bg-deuda-b) !important;
 }
 
 table.informe-matriz--financiero tfoot .informe-matriz-pie-etiq {
   position: sticky;
   left: 0;
-  z-index: 4;
+  z-index: 5;
   box-shadow: 1px 0 0 var(--border);
   min-width: calc(
     var(--informe-w-idx) + var(--informe-w-nombre) + var(--informe-w-vic) + var(--informe-w-abonos)
   );
+}
+
+/* Celdas que hacen scroll horizontal: capa inferior para que queden ocultas bajo las columnas fijas (evita que se lean por encima) */
+table.informe-matriz--financiero thead th.informe-matriz-col-fecha,
+table.informe-matriz--financiero
+  thead
+  th.informe-matriz-num-h:not(.informe-matriz-sticky-vic):not(.informe-matriz-sticky-abonos):not(.informe-matriz-th-nombre) {
+  z-index: 1;
+}
+
+table.informe-matriz--financiero
+  tbody
+  td.informe-matriz-num:not(.informe-matriz-col-idx):not(.informe-matriz-sticky-vic):not(.informe-matriz-sticky-abonos) {
+  position: relative;
+  z-index: 0;
+}
+
+table.informe-matriz--financiero tbody tr.informe-matriz-fila:nth-child(odd):not(.informe-matriz-fila-deuda)
+  td.informe-matriz-num:not(.informe-matriz-col-idx):not(.informe-matriz-sticky-vic):not(.informe-matriz-sticky-abonos) {
+  background: var(--informe-bg-row-a);
+}
+
+table.informe-matriz--financiero tbody tr.informe-matriz-fila:nth-child(even):not(.informe-matriz-fila-deuda)
+  td.informe-matriz-num:not(.informe-matriz-col-idx):not(.informe-matriz-sticky-vic):not(.informe-matriz-sticky-abonos) {
+  background: var(--informe-bg-row-b);
+}
+
+table.informe-matriz--financiero tbody tr.informe-matriz-fila-deuda:nth-child(odd)
+  td.informe-matriz-num:not(.informe-matriz-col-idx):not(.informe-matriz-sticky-vic):not(.informe-matriz-sticky-abonos) {
+  background: var(--informe-bg-deuda-a) !important;
+}
+
+table.informe-matriz--financiero tbody tr.informe-matriz-fila-deuda:nth-child(even)
+  td.informe-matriz-num:not(.informe-matriz-col-idx):not(.informe-matriz-sticky-vic):not(.informe-matriz-sticky-abonos) {
+  background: var(--informe-bg-deuda-b) !important;
+}
+
+table.informe-matriz--financiero tfoot td:not(.informe-matriz-pie-etiq) {
+  position: relative;
+  z-index: 0;
+}
+
+/* Borde más marcado en la última columna fija para tapar el contenido que pasa debajo */
+table.informe-matriz--financiero thead .informe-matriz-sticky-abonos,
+table.informe-matriz--financiero .informe-matriz-sticky-abonos {
+  box-shadow: 4px 0 8px -2px rgba(0, 0, 0, 0.14);
 }
 
 .informe-resumen-totales {

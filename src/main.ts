@@ -1254,8 +1254,8 @@ function panelInforme(): string {
       return `<tr class="informe-matriz-fila${deuda}">
         <td class="informe-matriz-num informe-matriz-col-idx">${idx + 1}</td>
         <td class="informe-matriz-nombre">${escapeHtml(j.nombre)}</td>
-        <td class="informe-matriz-num informe-victorias" title="Partidos ganados (resultado y camiseta guardados; no cuenta empates)">${victorias[j.id] ?? 0}</td>
-        <td class="informe-matriz-num">${escapeHtml(fmtMoney(sumaAbonosJugador(estado, j.id)))}</td>
+        <td class="informe-matriz-num informe-victorias informe-matriz-sticky-vic" title="Partidos ganados (resultado y camiseta guardados; no cuenta empates)">${victorias[j.id] ?? 0}</td>
+        <td class="informe-matriz-num informe-matriz-sticky-abonos">${escapeHtml(fmtMoney(sumaAbonosJugador(estado, j.id)))}</td>
         ${celdasP}
         <td class="informe-matriz-num">${escapeHtml(fmtMoney(totalJugado))}</td>
         <td class="informe-matriz-num ${saldoClass(j.saldo)}">${escapeHtml(fmtMoney(j.saldo))}</td>
@@ -1302,13 +1302,13 @@ function panelInforme(): string {
         Abajo: recaudado por partido, <strong>arriendo</strong> y diferencia por columna.
       </p>
       <div class="informe-matriz-scroll">
-        <table class="informe-matriz" role="grid">
+        <table class="informe-matriz informe-matriz--financiero" role="grid">
           <thead>
             <tr>
               <th scope="col" class="informe-matriz-col-idx informe-matriz-th-orden" data-informe-ciclo-orden tabindex="0" role="button" aria-label="${escapeHtml(ariaOrden[pasoOrden])}" title="Orden: ${escapeHtml(hintsOrden[pasoOrden])}. Clic para el siguiente criterio.">#<span class="informe-orden-hint" aria-hidden="true">${escapeHtml(hintsOrden[pasoOrden])}</span></th>
               <th scope="col" class="informe-matriz-th-nombre">Jugador</th>
-              <th scope="col" class="informe-matriz-num-h" title="Solo cuenta partidos con resultado distinto de empate y camiseta guardada">Victorias</th>
-              <th scope="col" class="informe-matriz-num-h">Abonos</th>
+              <th scope="col" class="informe-matriz-num-h informe-matriz-sticky-vic" title="Solo cuenta partidos con resultado distinto de empate y camiseta guardada">Victorias</th>
+              <th scope="col" class="informe-matriz-num-h informe-matriz-sticky-abonos">Abonos</th>
               ${thFechas}
               <th scope="col" class="informe-matriz-num-h">Total jugado</th>
               <th scope="col" class="informe-matriz-num-h">Saldo</th>

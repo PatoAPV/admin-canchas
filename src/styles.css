@@ -381,6 +381,121 @@ table.informe-matriz .informe-matriz-pie-dash {
   background: var(--surface2);
 }
 
+/* Informe financiero: #, Jugador, Victorias y Abonos quedan fijos al hacer scroll horizontal */
+table.informe-matriz--financiero {
+  --informe-w-idx: 3.35rem;
+  --informe-w-nombre: 10rem;
+  --informe-w-vic: 4.35rem;
+  --informe-w-abonos: 5.85rem;
+  --informe-left-nombre: var(--informe-w-idx);
+  --informe-left-vic: calc(var(--informe-w-idx) + var(--informe-w-nombre));
+  --informe-left-abonos: calc(var(--informe-left-vic) + var(--informe-w-vic));
+}
+
+table.informe-matriz--financiero .informe-matriz-col-idx {
+  width: var(--informe-w-idx);
+  min-width: var(--informe-w-idx);
+  max-width: var(--informe-w-idx);
+  box-sizing: border-box;
+}
+
+table.informe-matriz--financiero .informe-matriz-th-nombre,
+table.informe-matriz--financiero .informe-matriz-nombre {
+  left: var(--informe-left-nombre);
+  width: var(--informe-w-nombre);
+  min-width: var(--informe-w-nombre);
+  max-width: var(--informe-w-nombre);
+  box-sizing: border-box;
+}
+
+table.informe-matriz--financiero thead .informe-matriz-th-nombre {
+  z-index: 9;
+}
+
+table.informe-matriz--financiero tbody .informe-matriz-nombre {
+  z-index: 5;
+}
+
+/* Al solaparse, la columna más a la derecha tapa a las de la izquierda */
+table.informe-matriz--financiero tbody .informe-matriz-col-idx {
+  z-index: 4;
+}
+
+table.informe-matriz--financiero thead .informe-matriz-th-orden {
+  z-index: 10;
+}
+
+table.informe-matriz--financiero thead .informe-matriz-sticky-vic,
+table.informe-matriz--financiero thead .informe-matriz-sticky-abonos {
+  position: sticky;
+  top: 0;
+  background: var(--surface2);
+  box-shadow: 1px 0 0 var(--border);
+}
+
+table.informe-matriz--financiero thead .informe-matriz-sticky-vic {
+  left: var(--informe-left-vic);
+  min-width: var(--informe-w-vic);
+  width: var(--informe-w-vic);
+  z-index: 11;
+}
+
+table.informe-matriz--financiero thead .informe-matriz-sticky-abonos {
+  left: var(--informe-left-abonos);
+  min-width: var(--informe-w-abonos);
+  width: var(--informe-w-abonos);
+  z-index: 12;
+}
+
+table.informe-matriz--financiero .informe-matriz-sticky-vic,
+table.informe-matriz--financiero .informe-matriz-sticky-abonos {
+  position: sticky;
+  box-shadow: 1px 0 0 var(--border);
+}
+
+table.informe-matriz--financiero .informe-matriz-sticky-vic {
+  left: var(--informe-left-vic);
+  min-width: var(--informe-w-vic);
+  width: var(--informe-w-vic);
+  max-width: var(--informe-w-vic);
+  z-index: 6;
+  background: var(--surface);
+}
+
+table.informe-matriz--financiero .informe-matriz-sticky-abonos {
+  left: var(--informe-left-abonos);
+  min-width: var(--informe-w-abonos);
+  width: var(--informe-w-abonos);
+  max-width: var(--informe-w-abonos);
+  z-index: 7;
+  background: var(--surface);
+}
+
+table.informe-matriz--financiero tbody tr.informe-matriz-fila:nth-child(even) .informe-matriz-sticky-vic,
+table.informe-matriz--financiero tbody tr.informe-matriz-fila:nth-child(even) .informe-matriz-sticky-abonos {
+  background: rgba(0, 0, 0, 0.04);
+}
+
+table.informe-matriz--financiero tbody tr.informe-matriz-fila-deuda .informe-matriz-sticky-vic,
+table.informe-matriz--financiero tbody tr.informe-matriz-fila-deuda .informe-matriz-sticky-abonos {
+  background: rgba(120, 85, 0, 0.1) !important;
+}
+
+table.informe-matriz--financiero tbody tr.informe-matriz-fila-deuda:nth-child(even) .informe-matriz-sticky-vic,
+table.informe-matriz--financiero tbody tr.informe-matriz-fila-deuda:nth-child(even) .informe-matriz-sticky-abonos {
+  background: rgba(100, 70, 0, 0.12) !important;
+}
+
+table.informe-matriz--financiero tfoot .informe-matriz-pie-etiq {
+  position: sticky;
+  left: 0;
+  z-index: 4;
+  box-shadow: 1px 0 0 var(--border);
+  min-width: calc(
+    var(--informe-w-idx) + var(--informe-w-nombre) + var(--informe-w-vic) + var(--informe-w-abonos)
+  );
+}
+
 .informe-resumen-totales {
   margin-top: 1rem;
   display: flex;
@@ -1314,14 +1429,22 @@ table.cuadratura-jugador-tabla tfoot tr:last-child td {
 }
 
 table.jugadores-tabla .jugadores-th-acciones {
-  width: 9.5rem;
-  min-width: 9.5rem;
+  width: 11.25rem;
+  min-width: 11.25rem;
 }
 
 table.jugadores-tabla td.inline-actions--jugadores {
-  width: 9.5rem;
-  min-width: 9.5rem;
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: center;
+  gap: 0.35rem;
+  width: auto;
+  min-width: 11.25rem;
   vertical-align: middle;
+}
+
+table.jugadores-tabla td.inline-actions--jugadores button {
+  flex-shrink: 0;
 }
 
 .jugadores-acciones-vacio {

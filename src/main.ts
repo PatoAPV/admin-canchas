@@ -2,6 +2,7 @@ import "./styles.css";
 import {
   beginBusyCursor,
   endBusyCursor,
+  preloadBusyCursor,
   runWithBusyCursorAsync,
   runWithBusyCursorSync,
 } from "./busyCursor";
@@ -2874,4 +2875,5 @@ async function bootstrap(): Promise<void> {
 }
 
 inicializarTemaDesdeUrlYLocalStorage();
+preloadBusyCursor();
 void bootstrap();

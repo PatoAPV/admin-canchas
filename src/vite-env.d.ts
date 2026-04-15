@@ -12,6 +12,10 @@ interface ImportMetaEnv {
    * El usuario `juan` inicia como `juan@mi-club.auth` en Supabase Auth. Debe coincidir con el email al crear usuarios.
    */
   readonly VITE_AUTH_EMAIL_DOMAIN?: string;
+  /** Archivo en `public/` para cursor de espera. Por defecto `mi-balon.png`. */
+  readonly VITE_BUSY_CURSOR_URL?: string;
+  /** Punto caliente del cursor en px, ej. `16 16` para imagen 32×32. */
+  readonly VITE_BUSY_CURSOR_HOTSPOT?: string;
 }
 
 interface ImportMeta {

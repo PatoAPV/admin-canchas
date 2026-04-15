@@ -1618,10 +1618,52 @@ button.primary.modal-btn-peligro:hover {
   filter: brightness(1.08);
 }
 
-/* Cursor balón durante guardados, Supabase, sorteo, login, etc. Fallback wait ≈ reloj de arena (Windows). */
+/*
+ * Espera: cursor oculto + balón que sigue al puntero (el cursor nativo no puede girar en CSS).
+ */
 html.app-procesando,
 html.app-procesando * {
-  cursor: var(--app-busy-cursor, wait) !important;
+  cursor: none !important;
+}
+
+#app-busy-cursor-follower {
+  position: fixed;
+  left: 0;
+  top: 0;
+  width: 32px;
+  height: 32px;
+  margin-left: -16px;
+  margin-top: -16px;
+  pointer-events: none;
+  z-index: 2147483647;
+  visibility: hidden;
+  opacity: 0;
+}
+
+html.app-procesando #app-busy-cursor-follower {
+  visibility: visible;
+  opacity: 1;
+}
+
+#app-busy-cursor-follower .app-busy-cursor-follower-img {
+  width: 32px;
+  height: 32px;
+  object-fit: contain;
+  display: block;
+  filter: drop-shadow(0 1px 3px rgba(0, 0, 0, 0.4));
+  animation: app-busy-ball-spin 0.75s linear infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  #app-busy-cursor-follower .app-busy-cursor-follower-img {
+    animation: none;
+  }
+}
+
+@keyframes app-busy-ball-spin {
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 /* Pantalla de login (Supabase) */
